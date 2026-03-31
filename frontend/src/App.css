@@ -1,0 +1,142 @@
+.auth-container {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 460px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  padding: 28px;
+}
+
+.card h1 {
+  font-size: 1.6rem;
+  margin-bottom: 8px;
+  color: #111827;
+}
+
+.card p {
+  color: #4b5563;
+}
+
+.auth-form {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.auth-form label {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.auth-form input {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.auth-form input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.btn {
+  display: inline-block;
+  text-align: center;
+  background: #2563eb;
+  color: #fff;
+  text-decoration: none;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: #eef2ff;
+  color: #1e3a8a;
+}
+
+.error-text {
+  color: #b91c1c;
+  font-size: 0.9rem;
+}
+
+.center-note {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  color: #374151;
+  font-weight: 600;
+}
+
+.top-nav-wrap {
+  width: 100%;
+  padding: 14px 20px;
+}
+
+.top-nav {
+  max-width: 980px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand {
+  text-decoration: none;
+  color: #111827;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.top-nav-links {
+  display: flex;
+  gap: 14px;
+}
+
+.top-nav-links a {
+  text-decoration: none;
+  color: #374151;
+  font-weight: 600;
+}
+
+.db-check-wrap {
+  margin: 14px 0 18px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.db-check-label {
+  margin: 0 0 10px;
+  font-weight: 600;
+  color: #0f172a;
+}
