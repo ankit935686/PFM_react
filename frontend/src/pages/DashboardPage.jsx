@@ -1,33 +1,75 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useExpenses } from '../context/ExpenseContext';
+import { useIncome } from '../context/IncomeContext';
 import api from '../lib/api';
 import { formatCurrency } from '../lib/currency';
-import Sidebar from '../components/dashboard/Sidebar';
-import Topbar from '../components/dashboard/Topbar';
 import StatCard from '../components/dashboard/StatCard';
 import ChartsSection from '../components/dashboard/ChartsSection';
 import TransactionsTable from '../components/dashboard/TransactionsTable';
-import {
-  categoryDistribution,
-  monthlySpending,
-  sidebarItems,
-  statCards,
-  transactions,
-} from '../components/dashboard/dashboardData';
+
+const chartPalette = ['#3B82F6', '#22C55E', '#F59E0B', '#A855F7', '#EC4899', '#14B8A6'];
+
+const buildStatCards = (summary, currency) => [
+  {
+    key: 'balance',
+    title: 'Total Balance',
+    value: Number(summary.totalBalance || 0),
+    trend: `${currency}`,
+    trendDirection: Number(summary.totalBalance || 0) >= 0 ? 'up' : 'down',
+  },
+  {
+    key: 'income',
+    title: 'Monthly Income',
+    value: Number(summary.monthlyIncome || 0),
+    trend: `${currency}`,
+    trendDirection: 'up',
+  },
+  {
+    key: 'expenses',
+    title: 'Monthly Expenses',
+    value: Number(summary.monthlyExpenses || 0),
+    trend: `${currency}`,
+    trendDirection: 'down',
+  },
+  {
+    key: 'savings',
+    title: 'Savings',
+    value: Number(summary.totalSavings || 0),
+    trend: Number(summary.totalSavings || 0) >= 0 ? 'Net positive' : 'Net negative',
+    trendDirection: Number(summary.totalSavings || 0) >= 0 ? 'up' : 'down',
+  },
+];
 
 const DashboardPage = () => {
-  const navigate = useNavigate();
-  const { currentUser, logout } = useAuth();
+  const { currentUser } = useAuth();
+  const { expenses, loading: expensesLoading } = useExpenses();
+  const { income, loading: incomeLoading } = useIncome();
   const [error, setError] = useState('');
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
-  const [activeItem, setActiveItem] = useState('overview');
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [month, setMonth] = useState('Month to date');
-  const [account, setAccount] = useState('All accounts');
-  const [category, setCategory] = useState('All categories');
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [summary, setSummary] = useState({
+    totalBalance: 0,
+    monthlyIncome: 0,
+    monthlyExpenses: 0,
+    totalSavings: 0,
+  });
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [expenseCategoryData, setExpenseCategoryData] = useState([]);
+  const [monthlyExpenseData, setMonthlyExpenseData] = useState([]);
+  const [incomeExpenseTrendData, setIncomeExpenseTrendData] = useState([]);
+
+  const liveIncomeEntries = useMemo(
+    () => income.map((entry) => ({ ...entry, kind: 'income' })),
+    [income]
+  );
+  const liveExpenseEntries = useMemo(
+    () => expenses.map((entry) => ({ ...entry, kind: 'expense' })),
+    [expenses]
+  );
 
   const profileIncomplete = useMemo(() => {
     if (!profile) {
@@ -43,6 +85,19 @@ const DashboardPage = () => {
       Number(profile.savingsGoal) > 0
     );
   }, [profile]);
+
+  const currency = profile?.currency || 'INR';
+
+  const dashboardCards = useMemo(() => buildStatCards(summary, currency), [summary, currency]);
+
+  const hasNoSummaryData = useMemo(() => {
+    return (
+      Number(summary.totalBalance || 0) === 0 &&
+      Number(summary.monthlyIncome || 0) === 0 &&
+      Number(summary.monthlyExpenses || 0) === 0 &&
+      Number(summary.totalSavings || 0) === 0
+    );
+  }, [summary]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -63,115 +118,217 @@ const DashboardPage = () => {
     loadProfile();
   }, [currentUser]);
 
-  const handleLogout = async () => {
-    setError('');
-
-    try {
-      await logout();
-      navigate('/login');
-    } catch (logoutError) {
-      setError(logoutError.message);
-    }
-  };
-
-  const currency = profile?.currency || 'INR';
-  const dashboardCards = useMemo(() => {
-    const income = Number(profile?.monthlyIncome || 0);
-    const expenses = Number(profile?.monthlyBudget || 0);
-    const balance = income - expenses;
-    const savings = Number(profile?.savingsGoal || 0);
-
-    return statCards.map((card) => {
-      if (card.key === 'income') {
-        return { ...card, value: income || card.value };
+  useEffect(() => {
+    const loadSummary = async () => {
+      if (!currentUser?.uid) {
+        setSummaryLoading(false);
+        setSummary({
+          totalBalance: 0,
+          monthlyIncome: 0,
+          monthlyExpenses: 0,
+          totalSavings: 0,
+        });
+        return;
       }
 
-      if (card.key === 'expenses') {
-        return { ...card, value: expenses || card.value };
+      setSummaryLoading(true);
+
+      try {
+        const token = await currentUser.getIdToken();
+        const response = await api.get('/api/dashboard/summary', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'x-firebase-uid': currentUser.uid,
+            'x-firebase-email': currentUser.email || '',
+          },
+        });
+
+        const nextSummary = response.data?.summary || {};
+
+        setSummary({
+          totalBalance: Number(nextSummary.totalBalance || 0),
+          monthlyIncome: Number(nextSummary.monthlyIncome || 0),
+          monthlyExpenses: Number(nextSummary.monthlyExpenses || 0),
+          totalSavings: Number(nextSummary.totalSavings || 0),
+        });
+      } catch (summaryError) {
+        setError(summaryError.response?.data?.message || 'Failed to load dashboard summary.');
+      } finally {
+        setSummaryLoading(false);
+      }
+    };
+
+    loadSummary();
+  }, [currentUser]);
+
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      if (!currentUser?.uid) {
+        setAnalyticsLoading(false);
+        setExpenseCategoryData([]);
+        setMonthlyExpenseData([]);
+        setIncomeExpenseTrendData([]);
+        return;
       }
 
-      if (card.key === 'balance') {
-        return { ...card, value: income || expenses ? balance : card.value };
-      }
+      setAnalyticsLoading(true);
 
-      if (card.key === 'savings') {
-        return { ...card, value: savings || card.value };
-      }
+      try {
+        const token = await currentUser.getIdToken();
+        const headers = {
+          Authorization: `Bearer ${token}`,
+          'x-firebase-uid': currentUser.uid,
+          'x-firebase-email': currentUser.email || '',
+        };
 
-      return card;
-    });
-  }, [profile]);
+        const [categoriesResponse, monthlyResponse, trendResponse] = await Promise.all([
+          api.get('/api/dashboard/analytics/expense-categories', { headers }),
+          api.get('/api/dashboard/analytics/monthly-expenses', { headers }),
+          api.get('/api/dashboard/analytics/income-expense-trend', { headers }),
+        ]);
+
+        const categories = (categoriesResponse.data?.categories || []).map((item, index) => ({
+          category: item.category,
+          total: Number(item.total || 0),
+          color: chartPalette[index % chartPalette.length],
+        }));
+
+        setExpenseCategoryData(categories);
+        setMonthlyExpenseData(monthlyResponse.data?.monthlyExpenses || []);
+        setIncomeExpenseTrendData(trendResponse.data?.trend || []);
+      } catch (analyticsError) {
+        setError(analyticsError.response?.data?.message || 'Failed to load dashboard analytics.');
+        setExpenseCategoryData([]);
+        setMonthlyExpenseData([]);
+        setIncomeExpenseTrendData([]);
+      } finally {
+        setAnalyticsLoading(false);
+      }
+    };
+
+    loadAnalytics();
+  }, [currentUser]);
 
   const currencyFormatter = (value) => formatCurrency(value, currency);
 
+  const budgetPreview = useMemo(() => {
+    const monthlyBudget = Number(profile?.monthlyBudget || 0);
+    const used = Number(summary.monthlyExpenses || 0);
+    const remaining = Math.max(0, monthlyBudget - used);
+    const usagePercent = monthlyBudget > 0 ? Math.min(100, Math.round((used / monthlyBudget) * 100)) : 0;
+
+    return {
+      monthlyBudget,
+      used,
+      remaining,
+      usagePercent,
+    };
+  }, [profile, summary]);
+
+  const recentActivity = useMemo(() => {
+    return [...liveIncomeEntries, ...liveExpenseEntries]
+      .map((entry) => ({
+        id: entry._id,
+        kind: entry.kind,
+        date: entry.date,
+        title: entry.kind === 'income' ? entry.source : entry.category,
+        category: entry.kind === 'income' ? entry.source : entry.category,
+        note: entry.notes || '',
+        amount: Number(entry.amount || 0),
+      }))
+      .sort((left, right) => new Date(right.date) - new Date(left.date))
+      .slice(0, 5);
+  }, [liveIncomeEntries, liveExpenseEntries]);
+
   return (
-    <main className="min-h-screen bg-[#0B0F19] text-slate-100">
-      <Sidebar
-        items={sidebarItems}
-        activeItem={activeItem}
-        onSelect={setActiveItem}
-        onLogout={handleLogout}
-        mobileOpen={mobileOpen}
-        onToggleMobile={() => setMobileOpen((prev) => !prev)}
-      />
+    <section className="space-y-5">
+      <div>
+        <h1 className="text-3xl font-bold text-slate-100">Dashboard</h1>
+        <p className="mt-1 text-sm text-slate-400">Read-only summary of your finances with live analytics.</p>
+      </div>
 
-      <section className="md:ml-64">
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.16),transparent_45%),linear-gradient(180deg,#0B0F19_0%,#0E1423_100%)] p-4 pt-16 md:p-6 md:pt-6">
-          <Topbar
-            month={month}
-            setMonth={setMonth}
-            account={account}
-            setAccount={setAccount}
-            category={category}
-            setCategory={setCategory}
-            userEmail={currentUser?.email}
-          />
+      {!profileLoading && profileIncomplete && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-amber-300/30 bg-amber-500/10 p-4 text-amber-100"
+        >
+          <p className="font-semibold">Complete your profile for more accurate budgeting insights.</p>
+          <p className="mt-1 text-sm text-amber-100/80">
+            Add monthly budget and savings target from the profile setup page.
+          </p>
+          <Link
+            to="/profile-setup"
+            className="mt-3 inline-block rounded-lg bg-amber-300 px-4 py-2 text-sm font-semibold text-slate-900"
+          >
+            Open profile setup
+          </Link>
+        </motion.div>
+      )}
 
-          <div className="mt-5">
-            <h2 className="text-2xl font-bold text-[#E5E7EB]">
-              Welcome back, {profile?.fullName || currentUser?.email?.split('@')[0] || 'Investor'}
-            </h2>
-            <p className="text-sm text-slate-400">Your money movement and goals, all in one place.</p>
-          </div>
-
-          {!profileLoading && profileIncomplete && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-5 rounded-2xl border border-amber-300/30 bg-amber-500/10 p-4 text-amber-100"
-            >
-              <p className="font-semibold">Complete your profile for a personalized dashboard.</p>
-              <p className="mt-1 text-sm text-amber-100/80">
-                Add income, budget, goal, and preferred currency to unlock better planning.
-              </p>
-              <Link
-                to="/profile-setup"
-                className="mt-3 inline-block rounded-lg bg-amber-300 px-4 py-2 text-sm font-semibold text-slate-900"
-              >
-                Fill profile now
-              </Link>
-            </motion.div>
-          )}
-
-          <section className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {dashboardCards.map((card) => (
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {summaryLoading
+          ? [1, 2, 3, 4].map((item) => (
+              <article
+                key={item}
+                className="h-32 animate-pulse rounded-2xl border border-[#1F2937] bg-[#111827] p-4"
+              />
+            ))
+          : dashboardCards.map((card) => (
               <StatCard key={card.key} card={card} currencyFormatter={currencyFormatter} />
             ))}
-          </section>
-
-          <div className="mt-5">
-            <ChartsSection monthlySpending={monthlySpending} categoryDistribution={categoryDistribution} />
-          </div>
-
-          <div className="mt-5">
-            <TransactionsTable transactions={transactions} currencyFormatter={currencyFormatter} />
-          </div>
-
-          {error && <p className="mt-4 text-sm text-rose-300">{error}</p>}
-        </div>
       </section>
-    </main>
+
+      {!summaryLoading && hasNoSummaryData && (
+        <p className="rounded-xl border border-slate-700 bg-slate-900/40 px-4 py-3 text-sm text-slate-400">
+          No transactions yet. Open Transactions and add your first income or expense.
+        </p>
+      )}
+
+      <ChartsSection
+        expenseCategoryData={expenseCategoryData}
+        monthlyExpenseData={monthlyExpenseData}
+        incomeExpenseTrendData={incomeExpenseTrendData}
+        currencyFormatter={currencyFormatter}
+        loading={analyticsLoading}
+      />
+
+      <section className="grid gap-4 xl:grid-cols-[2fr_1fr]">
+        <TransactionsTable recentActivity={recentActivity} currencyFormatter={currencyFormatter} />
+
+        <article className="rounded-2xl border border-[#1F2937] bg-[#111827] p-4">
+          <h2 className="text-base font-semibold text-slate-100">Budget Preview</h2>
+
+          {budgetPreview.monthlyBudget > 0 ? (
+            <div className="mt-4 space-y-3 text-sm text-slate-300">
+              <p>Monthly Budget: <span className="font-semibold text-slate-100">{currencyFormatter(budgetPreview.monthlyBudget)}</span></p>
+              <p>Spent This Month: <span className="font-semibold text-rose-300">{currencyFormatter(budgetPreview.used)}</span></p>
+              <p>Remaining: <span className="font-semibold text-emerald-300">{currencyFormatter(budgetPreview.remaining)}</span></p>
+              <div className="h-2 overflow-hidden rounded-full bg-[#0B0F19]">
+                <div
+                  className="h-full bg-linear-to-r from-cyan-400 to-blue-500"
+                  style={{ width: `${budgetPreview.usagePercent}%` }}
+                />
+              </div>
+              <p className="text-xs text-slate-400">{budgetPreview.usagePercent}% budget used</p>
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-slate-400">Set a monthly budget in profile setup to see budget preview.</p>
+          )}
+        </article>
+      </section>
+
+      {(summaryLoading || analyticsLoading || expensesLoading || incomeLoading) && (
+        <p className="text-sm text-slate-400">Loading live income and expense data...</p>
+      )}
+
+      {error && <p className="text-sm text-rose-300">{error}</p>}
+    </section>
   );
 };
 
 export default DashboardPage;
+
+
+
+

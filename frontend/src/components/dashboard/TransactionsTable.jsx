@@ -2,43 +2,45 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
 
-const statusStyles = {
-  Completed: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  Pending: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  Processing: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  Failed: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+const typeStyles = {
+  income: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  expense: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
 };
 
-const chips = ['All', 'Completed', 'Pending', 'Processing', 'Failed'];
+const chips = ['All', 'Income', 'Expense'];
 
-const TransactionsTable = ({ transactions, currencyFormatter }) => {
+const TransactionsTable = ({ recentActivity, currencyFormatter }) => {
   const [search, setSearch] = useState('');
   const [activeChip, setActiveChip] = useState('All');
 
   const filtered = useMemo(() => {
-    return transactions.filter((tx) => {
-      const byChip = activeChip === 'All' || tx.status === activeChip;
+    return recentActivity.filter((entry) => {
+      const byChip =
+        activeChip === 'All' ||
+        (activeChip === 'Income' && entry.kind === 'income') ||
+        (activeChip === 'Expense' && entry.kind === 'expense');
       const query = search.trim().toLowerCase();
       const bySearch =
         !query ||
-        tx.title.toLowerCase().includes(query) ||
-        tx.category.toLowerCase().includes(query) ||
-        tx.date.toLowerCase().includes(query);
+        entry.title.toLowerCase().includes(query) ||
+        entry.category.toLowerCase().includes(query) ||
+        entry.note.toLowerCase().includes(query) ||
+        entry.date.toLowerCase().includes(query);
 
       return byChip && bySearch;
     });
-  }, [transactions, activeChip, search]);
+  }, [recentActivity, activeChip, search]);
 
   return (
     <section className="rounded-2xl border border-[#1F2937] bg-[#111827] p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-[#E5E7EB]">Transactions</h2>
+        <h2 className="text-base font-semibold text-[#E5E7EB]">Recent Activity</h2>
 
         <div className="relative min-w-55">
           <Search size={15} className="pointer-events-none absolute left-3 top-2.5 text-slate-500" />
           <input
             className="w-full rounded-xl border border-[#1F2937] bg-[#0B0F19] py-2 pl-9 pr-3 text-sm text-[#E5E7EB] outline-none focus:border-blue-500"
-            placeholder="Search transactions..."
+            placeholder="Search activity..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -67,34 +69,46 @@ const TransactionsTable = ({ transactions, currencyFormatter }) => {
           <thead>
             <tr className="text-xs uppercase tracking-wide text-slate-400">
               <th className="px-3 py-2">Date</th>
-              <th className="px-3 py-2">Title</th>
+              <th className="px-3 py-2">Type</th>
               <th className="px-3 py-2">Category</th>
-              <th className="px-3 py-2">Status</th>
+              <th className="px-3 py-2">Note</th>
               <th className="px-3 py-2 text-right">Amount</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((tx) => (
+            {filtered.map((entry) => (
               <motion.tr
-                key={tx.id}
+                key={entry.id}
                 whileHover={{ scale: 1.005 }}
                 className="rounded-xl bg-[#0B0F19] text-[#E5E7EB]"
               >
-                <td className="rounded-l-xl px-3 py-3 text-slate-300">{tx.date}</td>
-                <td className="px-3 py-3">{tx.title}</td>
-                <td className="px-3 py-3 text-slate-300">{tx.category}</td>
+                <td className="rounded-l-xl px-3 py-3 text-slate-300">
+                  {new Date(entry.date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </td>
                 <td className="px-3 py-3">
                   <span
                     className={`inline-flex rounded-full border px-2.5 py-1 text-xs ${
-                      statusStyles[tx.status] || 'border-slate-500 text-slate-300'
+                      typeStyles[entry.kind] || 'border-slate-500 text-slate-300'
                     }`}
                   >
-                    {tx.status}
+                    {entry.kind === 'income' ? 'Income' : 'Expense'}
                   </span>
                 </td>
-                <td className={`rounded-r-xl px-3 py-3 text-right font-medium ${tx.amount >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {tx.amount >= 0 ? '+' : '-'}
-                  {currencyFormatter(Math.abs(tx.amount))}
+                <td className="px-3 py-3 text-slate-300">{entry.category}</td>
+                <td className="px-3 py-3">
+                  <p className="max-w-60 truncate text-slate-300">{entry.note || 'No note added'}</p>
+                </td>
+                <td
+                  className={`rounded-r-xl px-3 py-3 text-right font-medium ${
+                    entry.kind === 'income' ? 'text-emerald-400' : 'text-rose-400'
+                  }`}
+                >
+                  {entry.kind === 'income' ? '+' : '-'}
+                  {currencyFormatter(Math.abs(entry.amount))}
                 </td>
               </motion.tr>
             ))}

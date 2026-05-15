@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion';
-import { Home, Wallet, ReceiptText, ChartColumnBig, Target, Settings, LogOut, Menu } from 'lucide-react';
+import { Home, Wallet, ReceiptText, ChartColumnBig, Target, Settings, LogOut, Menu, Landmark } from 'lucide-react';
 
 const icons = {
   overview: Home,
+  income: Landmark,
+  expenses: Wallet,
   transactions: ReceiptText,
   reports: ChartColumnBig,
   budgets: Wallet,

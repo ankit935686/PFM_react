@@ -4,6 +4,9 @@ const env = require('./config/env');
 const connectDB = require('./config/db');
 const healthRoutes = require('./routes/healthRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const expenseRoutes = require('./routes/expenseRoutes');
+const incomeRoutes = require('./routes/incomeRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const app = express();
 
@@ -16,6 +19,9 @@ app.use(express.json());
 
 app.use('/api/health', healthRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/expenses', expenseRoutes);
+app.use('/api/income', incomeRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 app.use((req, res) => {
 	res.status(404).json({

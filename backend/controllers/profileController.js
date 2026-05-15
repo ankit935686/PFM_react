@@ -79,7 +79,7 @@ const upsertProfile = async (req, res) => {
       { firebaseUid },
       { $set: payload },
       {
-        new: true,
+        returnDocument: 'after',
         upsert: true,
         runValidators: true,
         setDefaultsOnInsert: true,
