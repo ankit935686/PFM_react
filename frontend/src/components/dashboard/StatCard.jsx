@@ -18,27 +18,27 @@ const StatCard = ({ card, currencyFormatter }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
       whileHover={{ y: -4 }}
-      className="rounded-2xl border border-[#1F2937] bg-[#111827] p-4 shadow-lg shadow-black/20"
+      className="stat-card"
     >
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm text-slate-400">{card.title}</p>
-        <span className="rounded-lg border border-[#1F2937] bg-[#0B0F19] p-2 text-slate-300">
+      <div className="stat-card-head">
+        <p className="stat-card-label">{card.title}</p>
+        <span className="stat-card-icon">
           <Icon size={16} />
         </span>
       </div>
 
-      <p className="text-2xl font-semibold text-[#E5E7EB]">{currencyFormatter(card.value)}</p>
+      <p className="stat-card-value">{currencyFormatter(card.value)}</p>
 
-      <div className="mt-3 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset">
+      <div className="stat-card-trend">
         {positive ? (
           <>
-            <ArrowUpRight size={14} className="text-emerald-400" />
-            <span className="text-emerald-400">{card.trend}</span>
+            <ArrowUpRight size={14} className="trend-up" />
+            <span className="trend-up">{card.trend}</span>
           </>
         ) : (
           <>
-            <ArrowDownRight size={14} className="text-amber-400" />
-            <span className="text-amber-400">{card.trend}</span>
+            <ArrowDownRight size={14} className="trend-down" />
+            <span className="trend-down">{card.trend}</span>
           </>
         )}
       </div>

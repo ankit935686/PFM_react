@@ -1,21 +1,21 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ArrowLeftRight, Wallet, Target, ChartNoAxesCombined, Settings } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, Wallet, PiggyBank, ChartNoAxesCombined, Settings } from 'lucide-react';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
   { to: '/budget', label: 'Budget', icon: Wallet },
-  { to: '/goals', label: 'Goals', icon: Target },
+  { to: '/savings', label: 'Savings', icon: PiggyBank },
   { to: '/analytics', label: 'Analytics', icon: ChartNoAxesCombined },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
-const AppSidebar = ({ mobileOpen, onToggleMobile }) => {
+const AppSidebar = ({ mobileOpen, onToggleMobile, onLogout }) => {
   return (
     <>
       {mobileOpen && (
         <button
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          className="sidebar-overlay"
           type="button"
           onClick={onToggleMobile}
           aria-label="Close sidebar"
@@ -23,21 +23,19 @@ const AppSidebar = ({ mobileOpen, onToggleMobile }) => {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-[#1F2937] bg-[#0C1322] p-5 transition-transform duration-300 md:translate-x-0 ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`app-sidebar ${mobileOpen ? 'is-open' : ''}`}
       >
-        <div className="mb-8 flex items-center gap-3">
-          <span className="inline-grid h-10 w-10 place-items-center rounded-xl bg-linear-to-br from-cyan-400 to-blue-500 font-bold text-slate-950">
+        <div className="sidebar-brand">
+          <span className="sidebar-logo">
             W
           </span>
           <div>
-            <p className="font-semibold text-slate-100">WealthWise</p>
-            <p className="text-xs text-slate-400">Personal Finance Tracker</p>
+            <p className="sidebar-title">FinTrack</p>
+            <p className="sidebar-subtitle">Personal Finance</p>
           </div>
         </div>
 
-        <nav className="space-y-2">
+        <nav className="sidebar-nav">
           {navItems.map((item) => {
             const Icon = item.icon;
 
@@ -46,11 +44,7 @@ const AppSidebar = ({ mobileOpen, onToggleMobile }) => {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
-                    isActive
-                      ? 'bg-white text-[#0B0F19] font-semibold'
-                      : 'text-slate-300 hover:bg-white/8 hover:text-white'
-                  }`
+                  `sidebar-link ${isActive ? 'is-active' : ''}`
                 }
                 onClick={() => {
                   if (mobileOpen) {
@@ -64,6 +58,18 @@ const AppSidebar = ({ mobileOpen, onToggleMobile }) => {
             );
           })}
         </nav>
+
+        <div className="sidebar-card">
+          <p className="sidebar-card-title">Upgrade to Premium</p>
+          <p className="sidebar-card-text">Unlock exclusive features and AI insights.</p>
+          <button className="sidebar-card-button" type="button">
+            Upgrade Now
+          </button>
+        </div>
+
+        <button className="sidebar-logout" type="button" onClick={onLogout}>
+          Logout
+        </button>
       </aside>
     </>
   );

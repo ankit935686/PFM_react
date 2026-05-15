@@ -7,6 +7,9 @@ const AUTH_ERROR_MESSAGES = {
   'auth/email-already-in-use': 'This email is already registered. Please login instead.',
   'auth/weak-password': 'Password is too weak. Use at least 6 characters.',
   'auth/operation-not-allowed': 'Email/Password sign-in is disabled in Firebase project settings.',
+  'auth/popup-closed-by-user': 'Google sign-in was closed before completing. Please try again.',
+  'auth/popup-blocked': 'Popup was blocked by the browser. Please allow popups and try again.',
+  'auth/cancelled-popup-request': 'Google sign-in was cancelled. Please try again.',
 };
 
 export const getFirebaseAuthErrorMessage = (error) => {

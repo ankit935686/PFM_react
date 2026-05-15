@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, History, Plus as PlusIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useExpenses } from '../context/ExpenseContext';
 import { useIncome } from '../context/IncomeContext';
@@ -9,6 +9,10 @@ import { formatCurrency } from '../lib/currency';
 import FiltersBar from '../components/transactions/FiltersBar';
 import ModalForm from '../components/transactions/ModalForm';
 import TransactionTable from '../components/transactions/TransactionTable';
+import TransactionHistoryFilters from '../components/transactions/TransactionHistoryFilters';
+import TransactionStatistics from '../components/transactions/TransactionStatistics';
+import TransactionHistoryList from '../components/transactions/TransactionHistoryList';
+import useTransactionHistory from '../hooks/useTransactionHistory';
 
 const initialForm = {
   type: 'Expense',
@@ -16,6 +20,16 @@ const initialForm = {
   category: 'Food',
   date: new Date().toISOString().slice(0, 10),
   notes: '',
+};
+
+const expenseCategoryOptions = ['Food', 'Transport', 'Shopping', 'Rent', 'Utilities', 'Health', 'Education', 'Entertainment', 'Travel', 'Groceries', 'Bills', 'Other'];
+const incomeCategoryOptions = ['Salary', 'Freelance', 'Business', 'Investments', 'Rental', 'Bonus', 'Other'];
+
+const getDefaultCategoryForType = (type) => (type === 'Income' ? incomeCategoryOptions[0] : expenseCategoryOptions[0]);
+
+const getValidCategoryForType = (type, category) => {
+  const categories = type === 'Income' ? incomeCategoryOptions : expenseCategoryOptions;
+  return categories.includes(category) ? category : getDefaultCategoryForType(type);
 };
 
 const initialFilters = {
@@ -33,7 +47,9 @@ const TransactionsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { expenses, loading: expenseLoading, saving: expenseSaving, deletingId: expenseDeletingId, createExpense, updateExpense, deleteExpense } = useExpenses();
   const { income, loading: incomeLoading, saving: incomeSaving, deletingId: incomeDeletingId, createIncome, updateIncome, deleteIncome } = useIncome();
+  const { transactions: historyTransactions, statistics, loading: historyLoading, pagination, filters: historyFilters, updateFilters } = useTransactionHistory();
 
+  const [activeTab, setActiveTab] = useState('manage');
   const [profileCurrency, setProfileCurrency] = useState('INR');
   const [open, setOpen] = useState(searchParams.get('quickAdd') === '1');
   const [mode, setMode] = useState('create');
@@ -118,7 +134,7 @@ const TransactionsPage = () => {
     setForm({
       type: item.type,
       amount: item.amount,
-      category: item.category || 'Other',
+      category: getValidCategoryForType(item.type, item.category),
       date: toDateInput(item.date),
       notes: item.notes || '',
     });
@@ -139,7 +155,24 @@ const TransactionsPage = () => {
 
   const onFormChange = (event) => {
     const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => {
+      if (name === 'type') {
+        return {
+          ...prev,
+          type: value,
+          category: getDefaultCategoryForType(value),
+        };
+      }
+
+      if (name === 'category') {
+        return {
+          ...prev,
+          category: value,
+        };
+      }
+
+      return { ...prev, [name]: value };
+    });
   };
 
   const onSubmit = async (event) => {
@@ -227,29 +260,99 @@ const TransactionsPage = () => {
           Add Transaction
         </button>
       </header>
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-[#1F2937]">
+        <button
+          onClick={() => setActiveTab('manage')}
+          className={`px-4 py-3 font-medium transition ${
+            activeTab === 'manage'
+              ? 'border-b-2 border-blue-500 text-blue-400'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+          type="button"
+        >
+          <div className="flex items-center gap-2">
+            <PlusIcon size={18} />
+            Manage
+          </div>
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`px-4 py-3 font-medium transition ${
+            activeTab === 'history'
+              ? 'border-b-2 border-blue-500 text-blue-400'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+          type="button"
+        >
+          <div className="flex items-center gap-2">
+            <History size={18} />
+            History & Analytics
+          </div>
+        </button>
+      </div>
 
-      <FiltersBar
-        filters={filters}
-        onChange={(event) => {
-          const { name, value } = event.target;
-          setFilters((prev) => ({ ...prev, [name]: value }));
-        }}
-        onReset={() => setFilters(initialFilters)}
-        categories={categories}
-      />
+      {/* Manage Tab */}
+      {activeTab === 'manage' && (
+        <>
+          <FiltersBar
+            filters={filters}
+            onChange={(event) => {
+              const { name, value } = event.target;
+              setFilters((prev) => ({ ...prev, [name]: value }));
+            }}
+            onReset={() => setFilters(initialFilters)}
+            categories={categories}
+          />
 
-      {error && (
-        <p className="rounded-xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</p>
+          {error && (
+            <p className="rounded-xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</p>
+          )}
+
+          <TransactionTable
+            items={filtered}
+            currencyFormatter={(value) => formatCurrency(value, profileCurrency)}
+            loading={loading}
+            deletingId={deletingId}
+            onEdit={openEdit}
+            onDelete={onDelete}
+          />
+        </>
       )}
 
-      <TransactionTable
-        items={filtered}
-        currencyFormatter={(value) => formatCurrency(value, profileCurrency)}
-        loading={loading}
-        deletingId={deletingId}
-        onEdit={openEdit}
-        onDelete={onDelete}
-      />
+      {/* History Tab */}
+      {activeTab === 'history' && (
+        <div className="space-y-6">
+          <TransactionHistoryFilters
+            filters={historyFilters}
+            onFilterChange={updateFilters}
+            categories={categories}
+            loading={historyLoading}
+          />
+
+          <TransactionStatistics
+            statistics={statistics}
+            currencyFormatter={(value) => formatCurrency(value, profileCurrency)}
+            loading={historyLoading}
+          />
+
+          <div>
+            <h3 className="text-lg font-semibold text-[#E5E7EB] mb-4">Transactions</h3>
+            <TransactionHistoryList
+              transactions={historyTransactions}
+              currencyFormatter={(value) => formatCurrency(value, profileCurrency)}
+              loading={historyLoading}
+              pagination={pagination}
+              onPageChange={(page) =>
+                updateFilters({
+                  ...historyFilters,
+                  page,
+                })
+              }
+            />
+          </div>
+        </div>
+      )}
 
       <ModalForm
         open={open}

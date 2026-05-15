@@ -1,13 +1,51 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { Menu, Plus } from 'lucide-react';
+import { Calendar, Menu, Moon, Plus, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import AppSidebar from './AppSidebar';
+import NotificationBell from './NotificationBell';
+
+const monthOptions = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 
 const AppLayout = () => {
-  const { logout } = useAuth();
+  const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+
+  const userLabel = currentUser?.displayName || currentUser?.email || 'Guest user';
+  const userInitial = userLabel ? userLabel.trim().charAt(0).toUpperCase() : 'G';
+  const availableYears = useMemo(() => {
+    return Array.from({ length: 7 }, (_, index) => currentDate.getFullYear() - 3 + index);
+  }, [currentDate]);
+
+  const selectedPeriodLabel = `${monthOptions[selectedMonth - 1]} ${selectedYear}`;
+
+  const outletContext = useMemo(
+    () => ({
+      selectedMonth,
+      selectedYear,
+      selectedPeriodLabel,
+      setSelectedMonth,
+      setSelectedYear,
+    }),
+    [selectedMonth, selectedYear, selectedPeriodLabel]
+  );
 
   const handleLogout = async () => {
     await logout();
@@ -15,45 +53,85 @@ const AppLayout = () => {
   };
 
   return (
-    <main className="min-h-screen bg-[#0B0F19] text-slate-100">
-      <AppSidebar mobileOpen={mobileOpen} onToggleMobile={() => setMobileOpen((prev) => !prev)} />
+    <main className="app-shell">
+      <AppSidebar
+        mobileOpen={mobileOpen}
+        onToggleMobile={() => setMobileOpen((prev) => !prev)}
+        onLogout={handleLogout}
+      />
 
-      <section className="md:ml-64">
-        <header className="sticky top-0 z-20 border-b border-[#1F2937] bg-[#0D1526]/92 backdrop-blur px-4 py-3 md:px-6">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <button
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#1F2937] bg-[#111827] md:hidden"
-                type="button"
-                onClick={() => setMobileOpen((prev) => !prev)}
-                aria-label="Open navigation"
-              >
-                <Menu size={18} />
-              </button>
-              <p className="text-sm text-slate-300">Clear, unified money management</p>
+      <section className="app-content">
+        <header className="app-topbar">
+          <div className="topbar-left">
+            <button
+              className="app-menu-btn"
+              type="button"
+              onClick={() => setMobileOpen((prev) => !prev)}
+              aria-label="Open navigation"
+            >
+              <Menu size={18} />
+            </button>
+
+            <div className="topbar-search">
+              <Search size={16} className="topbar-search-icon" />
+              <input type="search" placeholder="Search transactions, categories..." />
             </div>
 
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="rounded-xl border border-[#1F2937] bg-[#0B0F19] px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-500"
-            >
-              Logout
+            <div className="topbar-period" aria-label="Dashboard month selector">
+              <Calendar size={16} className="topbar-period-icon" />
+              <div className="topbar-period-fields">
+                <select
+                  className="topbar-period-select"
+                  value={selectedMonth}
+                  onChange={(event) => setSelectedMonth(Number(event.target.value))}
+                  aria-label="Select month"
+                >
+                  {monthOptions.map((month, index) => (
+                    <option key={month} value={index + 1}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  className="topbar-period-select"
+                  value={selectedYear}
+                  onChange={(event) => setSelectedYear(Number(event.target.value))}
+                  aria-label="Select year"
+                >
+                  {availableYears.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="topbar-actions">
+            <NotificationBell userId={currentUser?.uid} userLabel={userLabel} />
+            <button className="icon-btn" type="button" aria-label="Toggle theme">
+              <Moon size={18} />
             </button>
+
+            <div className="user-pill">
+              <span className="user-avatar">{userInitial}</span>
+              <div>
+                <p className="user-greeting">Hi, {userLabel.split(' ')[0] || 'User'}</p>
+                <p className="user-subtitle">Personal Finance</p>
+              </div>
+            </div>
           </div>
         </header>
 
-        <div className="p-4 md:p-6">
-          <Outlet />
+        <div className="app-page">
+          <Outlet context={outletContext} />
         </div>
       </section>
 
-      <Link
-        to="/transactions?quickAdd=1"
-        className="fixed bottom-6 right-6 z-30 inline-flex items-center gap-2 rounded-full bg-linear-to-r from-cyan-400 to-blue-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/25 transition hover:scale-[1.02]"
-      >
+      <Link to="/transactions?quickAdd=1" className="fab-add">
         <Plus size={16} />
-        Add Transaction
       </Link>
     </main>
   );

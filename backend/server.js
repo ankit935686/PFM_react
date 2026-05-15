@@ -6,7 +6,10 @@ const healthRoutes = require('./routes/healthRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
 const incomeRoutes = require('./routes/incomeRoutes');
+const budgetRoutes = require('./routes/budgetRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const savingsRoutes = require('./routes/savingsRoutes');
+const transactionRoutes = require('./routes/transactionRoutes');
 
 const app = express();
 
@@ -21,7 +24,10 @@ app.use('/api/health', healthRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/income', incomeRoutes);
+app.use('/api/budgets', budgetRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/savings', savingsRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 app.use((req, res) => {
 	res.status(404).json({

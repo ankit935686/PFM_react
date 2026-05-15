@@ -9,7 +9,7 @@ import DashboardPage from './pages/DashboardPage'
 import TransactionsPage from './pages/TransactionsPage'
 import ProfileSetupPage from './pages/ProfileSetupPage'
 import BudgetPage from './pages/BudgetPage'
-import GoalsPage from './pages/GoalsPage'
+import SavingsPage from './pages/SavingsPage'
 import AnalyticsPage from './pages/AnalyticsPage'
 import SettingsPage from './pages/SettingsPage'
 import './App.css'
@@ -44,7 +44,8 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/budget" element={<BudgetPage />} />
-        <Route path="/goals" element={<GoalsPage />} />
+        <Route path="/savings" element={<SavingsPage />} />
+        <Route path="/goals" element={<Navigate to="/savings" replace />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/profile-setup" element={<ProfileSetupPage />} />

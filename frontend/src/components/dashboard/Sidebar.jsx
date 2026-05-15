@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Home, Wallet, ReceiptText, ChartColumnBig, Target, Settings, LogOut, Menu, Landmark } from 'lucide-react';
+import { Home, Wallet, ReceiptText, ChartColumnBig, Settings, LogOut, Menu, Landmark, PiggyBank } from 'lucide-react';
 
 const icons = {
   overview: Home,
@@ -8,7 +8,7 @@ const icons = {
   transactions: ReceiptText,
   reports: ChartColumnBig,
   budgets: Wallet,
-  goals: Target,
+  savings: PiggyBank,
   settings: Settings,
 };
 

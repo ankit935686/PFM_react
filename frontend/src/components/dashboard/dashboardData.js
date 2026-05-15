@@ -5,6 +5,6 @@ export const sidebarItems = [
   { key: 'transactions', label: 'Transactions' },
   { key: 'reports', label: 'Reports' },
   { key: 'budgets', label: 'Budgets' },
-  { key: 'goals', label: 'Goals' },
+  { key: 'savings', label: 'Savings' },
   { key: 'settings', label: 'Settings' },
 ];

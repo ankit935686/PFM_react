@@ -1,5 +1,6 @@
 const Income = require('../models/incomeModel');
 const Expense = require('../models/expenseModel');
+const Savings = require('../models/savingsModel');
 
 const getUserIdFromRequest = (req) => {
   return req.userId || req.user?.userId || req.user?._id || req.user?.id || null;
@@ -11,6 +12,34 @@ const getDateBoundsForCurrentMonth = () => {
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
 
   return { monthStart, monthEnd };
+};
+
+const getDateBoundsForMonth = (year, month) => {
+  const monthStart = new Date(year, month - 1, 1, 0, 0, 0, 0);
+  const monthEnd = new Date(year, month, 1, 0, 0, 0, 0);
+
+  return { monthStart, monthEnd };
+};
+
+const parseMonthYear = (monthValue, yearValue) => {
+  const now = new Date();
+  const month = Number(monthValue);
+  const year = Number(yearValue);
+
+  return {
+    month: Number.isInteger(month) && month >= 1 && month <= 12 ? month : now.getMonth() + 1,
+    year: Number.isInteger(year) && year >= 2000 ? year : now.getFullYear(),
+  };
+};
+
+const getPreviousMonth = (year, month) => {
+  const date = new Date(year, month - 1, 1, 0, 0, 0, 0);
+  date.setMonth(date.getMonth() - 1);
+
+  return {
+    month: date.getMonth() + 1,
+    year: date.getFullYear(),
+  };
 };
 
 const monthKeyFromParts = (year, month) => `${year}-${String(month).padStart(2, '0')}`;
@@ -116,26 +145,93 @@ const getDashboardSummary = async (req, res) => {
       });
     }
 
-    const { monthStart, monthEnd } = getDateBoundsForCurrentMonth();
+    const { month: selectedMonth, year: selectedYear } = parseMonthYear(req.query.month, req.query.year);
+    const { monthStart, monthEnd } = getDateBoundsForMonth(selectedYear, selectedMonth);
+    const previous = getPreviousMonth(selectedYear, selectedMonth);
+    const previousBounds = getDateBoundsForMonth(previous.year, previous.month);
 
-    const [incomeStats, expenseStats] = await Promise.all([
+    const [incomeStats, expenseStats, previousIncomeStats, previousExpenseStats, savingsGoal] = await Promise.all([
       aggregateIncomeStats(userId, monthStart, monthEnd),
       aggregateExpenseStats(userId, monthStart, monthEnd),
+      aggregateIncomeStats(userId, previousBounds.monthStart, previousBounds.monthEnd),
+      aggregateExpenseStats(userId, previousBounds.monthStart, previousBounds.monthEnd),
+      Savings.findOne({
+        userId,
+        month: selectedMonth,
+        year: selectedYear,
+      }),
     ]);
 
-    const totalBalance = incomeStats.totalIncome - expenseStats.totalExpenses;
-    const totalSavings = incomeStats.monthlyIncome - expenseStats.monthlyExpenses;
+    const totalBalance = incomeStats.monthlyIncome - expenseStats.monthlyExpenses;
+    const cumulativeBalance = incomeStats.totalIncome - expenseStats.totalExpenses;
+    const monthlySavings = incomeStats.monthlyIncome - expenseStats.monthlyExpenses;
+    const goalAmount = savingsGoal?.goalAmount || 0;
+    const previousMonthlySavings = previousIncomeStats.monthlyIncome - previousExpenseStats.monthlyExpenses;
+
+    let savingsPercentage = 0;
+    if (goalAmount > 0) {
+      savingsPercentage = (monthlySavings / goalAmount) * 100;
+    } else if (incomeStats.monthlyIncome > 0) {
+      savingsPercentage = (monthlySavings / incomeStats.monthlyIncome) * 100;
+    }
+
+    const progressStatus = monthlySavings >= goalAmount ? 'Achieved' : 'In Progress';
+    const incomeChange = previousIncomeStats.monthlyIncome > 0
+      ? ((incomeStats.monthlyIncome - previousIncomeStats.monthlyIncome) / previousIncomeStats.monthlyIncome) * 100
+      : null;
+    const expenseChange = previousExpenseStats.monthlyExpenses > 0
+      ? ((expenseStats.monthlyExpenses - previousExpenseStats.monthlyExpenses) / previousExpenseStats.monthlyExpenses) * 100
+      : null;
+    const savingsChange = previousMonthlySavings !== 0
+      ? ((monthlySavings - previousMonthlySavings) / Math.abs(previousMonthlySavings)) * 100
+      : null;
 
     return res.status(200).json({
       summary: {
         totalBalance,
         monthlyIncome: incomeStats.monthlyIncome,
         monthlyExpenses: expenseStats.monthlyExpenses,
-        totalSavings,
+        totalSavings: monthlySavings,
+        cumulativeBalance,
+      },
+      savings: {
+        monthlySavings,
+        goalAmount,
+        savingsPercentage: Math.round(savingsPercentage * 100) / 100,
+        progressStatus,
+        displayText: `Saved ₹${monthlySavings.toLocaleString('en-IN')} out of ₹${goalAmount.toLocaleString('en-IN')} goal`,
+      },
+      comparison: {
+        selected: {
+          month: selectedMonth,
+          year: selectedYear,
+        },
+        previous: {
+          month: previous.month,
+          year: previous.year,
+          monthlyIncome: previousIncomeStats.monthlyIncome,
+          monthlyExpenses: previousExpenseStats.monthlyExpenses,
+          monthlySavings: previousMonthlySavings,
+        },
+        deltas: {
+          incomeChange,
+          expenseChange,
+          savingsChange,
+        },
       },
       month: {
-        start: monthStart.toISOString(),
-        endExclusive: monthEnd.toISOString(),
+        selected: {
+          month: selectedMonth,
+          year: selectedYear,
+          start: monthStart.toISOString(),
+          endExclusive: monthEnd.toISOString(),
+        },
+        previous: {
+          month: previous.month,
+          year: previous.year,
+          start: previousBounds.monthStart.toISOString(),
+          endExclusive: previousBounds.monthEnd.toISOString(),
+        },
       },
     });
   } catch (error) {
@@ -156,8 +252,16 @@ const getExpenseCategoryTotals = async (req, res) => {
       });
     }
 
+    const { month, year } = parseMonthYear(req.query.month, req.query.year);
+    const { monthStart, monthEnd } = getDateBoundsForMonth(year, month);
+
     const categories = await Expense.aggregate([
-      { $match: { userId } },
+      {
+        $match: {
+          userId,
+          date: { $gte: monthStart, $lt: monthEnd },
+        },
+      },
       {
         $group: {
           _id: '$category',
@@ -176,6 +280,12 @@ const getExpenseCategoryTotals = async (req, res) => {
 
     return res.status(200).json({
       categories,
+      month: {
+        month,
+        year,
+        start: monthStart.toISOString(),
+        endExclusive: monthEnd.toISOString(),
+      },
     });
   } catch (error) {
     return res.status(500).json({
@@ -195,7 +305,11 @@ const getMonthlyExpenseTotals = async (req, res) => {
       });
     }
 
-    const { start, months } = getLastMonthsWindow(req.query.months);
+    const { month, year } = parseMonthYear(req.query.month, req.query.year);
+    const requestedMonths = Number.isFinite(Number(req.query.months)) ? Number(req.query.months) : 6;
+    const months = Math.max(1, Math.min(24, requestedMonths));
+    const end = new Date(year, month, 1, 0, 0, 0, 0);
+    const start = new Date(year, month - months, 1, 0, 0, 0, 0);
 
     const monthlyExpenses = await Expense.aggregate([
       {
@@ -238,6 +352,12 @@ const getMonthlyExpenseTotals = async (req, res) => {
     return res.status(200).json({
       months,
       monthlyExpenses,
+      month: {
+        month,
+        year,
+        start: start.toISOString(),
+        endExclusive: end.toISOString(),
+      },
     });
   } catch (error) {
     return res.status(500).json({
@@ -257,7 +377,11 @@ const getIncomeExpenseTrend = async (req, res) => {
       });
     }
 
-    const { start, months } = getLastMonthsWindow(req.query.months);
+    const { month, year } = parseMonthYear(req.query.month, req.query.year);
+    const requestedMonths = Number.isFinite(Number(req.query.months)) ? Number(req.query.months) : 6;
+    const months = Math.max(1, Math.min(24, requestedMonths));
+    const end = new Date(year, month, 1, 0, 0, 0, 0);
+    const start = new Date(year, month - months, 1, 0, 0, 0, 0);
 
     const [incomeTrend, expenseTrend] = await Promise.all([
       Income.aggregate([
@@ -319,6 +443,12 @@ const getIncomeExpenseTrend = async (req, res) => {
     return res.status(200).json({
       months,
       trend,
+      month: {
+        month,
+        year,
+        start: start.toISOString(),
+        endExclusive: end.toISOString(),
+      },
     });
   } catch (error) {
     return res.status(500).json({
