@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowDownLeft, ArrowUpRight, BarChart3, Calendar, Search } from 'lucide-react';
+import { Calendar, Search } from 'lucide-react';
 
 const TransactionHistoryFilters = ({
   filters,
@@ -20,16 +20,13 @@ const TransactionHistoryFilters = ({
     <motion.div
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-4 p-6 bg-[#111827] border border-[#1F2937] rounded-2xl"
+      className="mx-6 mb-5 rounded-xl border border-gray-100 bg-white px-5 py-4"
     >
-      <h3 className="text-lg font-semibold text-[#E5E7EB] mb-4">Filter Transactions</h3>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Search */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <div>
-          <label className="block text-sm font-medium text-[#D1D5DB] mb-2">Search</label>
+          <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-400">Search</label>
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280]" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               name="search"
@@ -37,20 +34,19 @@ const TransactionHistoryFilters = ({
               onChange={handleInputChange}
               placeholder="Search category, notes..."
               disabled={loading}
-              className="w-full pl-10 pr-4 py-2 bg-[#0B0F19] border border-[#1F2937] rounded-lg text-[#E5E7EB] placeholder-[#6B7280] focus:border-blue-500 focus:outline-none transition disabled:opacity-50"
+              className="h-[38px] w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 outline-none focus:border-[#5B5BD6] disabled:opacity-50"
             />
           </div>
         </div>
 
-        {/* Type Filter */}
         <div>
-          <label className="block text-sm font-medium text-[#D1D5DB] mb-2">Type</label>
+          <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-400">Type</label>
           <select
             name="type"
             value={filters.type}
             onChange={handleInputChange}
             disabled={loading}
-            className="w-full px-4 py-2 bg-[#0B0F19] border border-[#1F2937] rounded-lg text-[#E5E7EB] focus:border-blue-500 focus:outline-none transition disabled:opacity-50"
+            className="h-[38px] w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#5B5BD6] disabled:opacity-50"
           >
             <option value="All">All Transactions</option>
             <option value="Income">Income Only</option>
@@ -58,15 +54,14 @@ const TransactionHistoryFilters = ({
           </select>
         </div>
 
-        {/* Category Filter */}
         <div>
-          <label className="block text-sm font-medium text-[#D1D5DB] mb-2">Category</label>
+          <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-400">Category</label>
           <select
             name="category"
             value={filters.category}
             onChange={handleInputChange}
             disabled={loading}
-            className="w-full px-4 py-2 bg-[#0B0F19] border border-[#1F2937] rounded-lg text-[#E5E7EB] focus:border-blue-500 focus:outline-none transition disabled:opacity-50"
+            className="h-[38px] w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#5B5BD6] disabled:opacity-50"
           >
             <option value="All">All Categories</option>
             {categories.map((cat) => (
@@ -77,47 +72,44 @@ const TransactionHistoryFilters = ({
           </select>
         </div>
 
-        {/* Start Date */}
         <div>
-          <label className="block text-sm font-medium text-[#D1D5DB] mb-2">From Date</label>
+          <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-400">From Date</label>
           <div className="relative">
-            <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280]" />
+            <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="date"
               name="startDate"
               value={filters.startDate}
               onChange={handleInputChange}
               disabled={loading}
-              className="w-full pl-10 pr-4 py-2 bg-[#0B0F19] border border-[#1F2937] rounded-lg text-[#E5E7EB] focus:border-blue-500 focus:outline-none transition disabled:opacity-50"
+              className="h-[38px] w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none focus:border-[#5B5BD6] disabled:opacity-50"
             />
           </div>
         </div>
 
-        {/* End Date */}
         <div>
-          <label className="block text-sm font-medium text-[#D1D5DB] mb-2">To Date</label>
+          <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-400">To Date</label>
           <div className="relative">
-            <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280]" />
+            <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="date"
               name="endDate"
               value={filters.endDate}
               onChange={handleInputChange}
               disabled={loading}
-              className="w-full pl-10 pr-4 py-2 bg-[#0B0F19] border border-[#1F2937] rounded-lg text-[#E5E7EB] focus:border-blue-500 focus:outline-none transition disabled:opacity-50"
+              className="h-[38px] w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-sm text-gray-700 outline-none focus:border-[#5B5BD6] disabled:opacity-50"
             />
           </div>
         </div>
 
-        {/* Sort By */}
         <div>
-          <label className="block text-sm font-medium text-[#D1D5DB] mb-2">Sort By</label>
+          <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-400">Sort By</label>
           <select
             name="sortBy"
             value={filters.sortBy}
             onChange={handleInputChange}
             disabled={loading}
-            className="w-full px-4 py-2 bg-[#0B0F19] border border-[#1F2937] rounded-lg text-[#E5E7EB] focus:border-blue-500 focus:outline-none transition disabled:opacity-50"
+            className="h-[38px] w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#5B5BD6] disabled:opacity-50"
           >
             <option value="date">Date (Newest)</option>
             <option value="amount">Amount (Highest)</option>

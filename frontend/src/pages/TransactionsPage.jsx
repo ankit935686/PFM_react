@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, History, Plus as PlusIcon } from 'lucide-react';
+import { Plus, History, Plus as PlusIcon, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useExpenses } from '../context/ExpenseContext';
 import { useIncome } from '../context/IncomeContext';
@@ -297,32 +297,43 @@ const TransactionsPage = () => {
   const loading = incomeLoading || expenseLoading;
   const saving = incomeSaving || expenseSaving;
   const deletingId = incomeDeletingId || expenseDeletingId;
+  const monthYearLabel = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
-    <section className="space-y-5">
-      <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#1F2937] bg-[#111827] p-5">
+    <section className="space-y-6 px-6 pb-6">
+      <header className="flex flex-wrap items-center justify-between gap-3 py-5">
         <div>
-          <h1 className="text-3xl font-bold text-slate-100">Transactions</h1>
-          <p className="mt-1 text-sm text-slate-400">Manage income and expense in one unified workflow.</p>
+          <h1 className="text-[22px] font-semibold text-gray-900">Transactions</h1>
+          <p className="mt-1 text-[13px] text-gray-500">{monthYearLabel}</p>
         </div>
 
-        <button
-          type="button"
-          onClick={openCreate}
-          className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-cyan-400 to-blue-500 px-4 py-2.5 text-sm font-semibold text-slate-950"
-        >
-          <Plus size={16} />
-          Add Transaction
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="inline-flex h-[38px] w-[38px] items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 transition hover:text-[#5B5BD6]"
+            aria-label="Export"
+          >
+            <Download size={16} />
+          </button>
+
+          <button
+            type="button"
+            onClick={openCreate}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#5B5BD6] px-4 py-2 text-sm font-medium text-white hover:bg-[#4848C2]"
+          >
+            <Plus size={16} />
+            Add Transaction
+          </button>
+        </div>
       </header>
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-[#1F2937]">
+
+      <div className="flex border-b border-gray-200">
         <button
           onClick={() => setActiveTab('manage')}
-          className={`px-4 py-3 font-medium transition ${
+          className={`h-11 px-4 text-sm font-medium transition ${
             activeTab === 'manage'
-              ? 'border-b-2 border-blue-500 text-blue-400'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'border-b-2 border-[#5B5BD6] text-[#5B5BD6]'
+              : 'text-gray-500 hover:text-gray-700'
           }`}
           type="button"
         >
@@ -333,10 +344,10 @@ const TransactionsPage = () => {
         </button>
         <button
           onClick={() => setActiveTab('history')}
-          className={`px-4 py-3 font-medium transition ${
+          className={`h-11 px-4 text-sm font-medium transition ${
             activeTab === 'history'
-              ? 'border-b-2 border-blue-500 text-blue-400'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'border-b-2 border-[#5B5BD6] text-[#5B5BD6]'
+              : 'text-gray-500 hover:text-gray-700'
           }`}
           type="button"
         >
@@ -361,7 +372,7 @@ const TransactionsPage = () => {
           />
 
           {error && (
-            <p className="rounded-xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</p>
+            <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{error}</p>
           )}
 
           <TransactionTable
@@ -392,7 +403,7 @@ const TransactionsPage = () => {
           />
 
           <div>
-            <h3 className="text-lg font-semibold text-[#E5E7EB] mb-4">Transactions</h3>
+            <h3 className="mb-4 text-lg font-semibold text-gray-900">Transactions</h3>
             <TransactionHistoryList
               transactions={historyTransactions}
               currencyFormatter={(value) => formatCurrency(value, profileCurrency)}

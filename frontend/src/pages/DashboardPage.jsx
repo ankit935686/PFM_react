@@ -14,7 +14,7 @@ import { TransactionsTable } from '../components/dashboard/TransactionsTable';
 import SavingsSection from '../components/dashboard/SavingsSection';
 import SavingsGoalModal from '../components/dashboard/SavingsGoalModal';
 
-const chartPalette = ['#3B82F6', '#22C55E', '#F59E0B', '#A855F7', '#EC4899', '#14B8A6'];
+const chartPalette = ['#6EC6E6', '#A78BFA', '#F472B6', '#FB923C', '#34D399'];
 
 const monthOptions = [
   'January',
@@ -518,15 +518,15 @@ const DashboardPage = () => {
   }, [currentUser, selectedMonth, selectedYear, comparison, budgetOverview.percentUsed]);
 
   return (
-    <section className="dashboard-page">
-      <header className="dashboard-header-modern dashboard-hero p-4 md:p-5 relative">
+    <section className="dashboard-page !font-[Nunito] bg-[#F0F2FF] text-[#1E1E2D]">
+      <header className="dashboard-header-modern dashboard-hero relative rounded-xl border border-[#E8EAF6] bg-white p-4 shadow-[0_8px_24px_-20px_rgba(30,30,45,0.2)] md:p-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="dashboard-hero-main">
-            <h1 className="dashboard-title text-3xl md:text-4xl font-semibold">
+            <h1 className="dashboard-title text-[30px] font-semibold text-[#1E1E2D] md:text-[34px]">
               {profile?.fullName ? `Good Evening, ${profile.fullName}!` : 'Good evening!'}
             </h1>
 
-            <p className="dashboard-subtitle text-sm text-[color:var(--dash-muted)]">
+            <p className="dashboard-subtitle text-[12px] text-[#6B7280]">
               {`Here's your financial overview for ${selectedPeriodLabel}`}
             </p>
           </div>
@@ -534,13 +534,13 @@ const DashboardPage = () => {
           <div className="dashboard-cta-row mt-1 flex flex-col items-start gap-2 md:mt-0 md:ml-0 md:text-right md:flex-row md:items-center md:gap-3 md:absolute md:top-4 md:right-6">
             <Link
               to="/transactions"
-              className="dashboard-cta dashboard-cta-secondary min-w-[150px] justify-center"
+              className="dashboard-cta dashboard-cta-secondary min-w-[150px] justify-center rounded-md border border-[#E8EAF6] bg-white text-[12px] font-semibold text-[#5B5BD6] hover:bg-[#EEF0FF]"
             >
               View History
             </Link>
             <Link
               to="/transactions?quickAdd=1"
-              className="dashboard-cta dashboard-cta-primary min-w-[150px] justify-center flex items-center gap-2"
+              className="dashboard-cta dashboard-cta-primary flex min-w-[150px] items-center justify-center gap-2 rounded-md bg-[#5B5BD6] text-[12px] font-semibold text-white hover:bg-[#4848C2]"
             >
               <span className="text-lg">+</span>
               <span>Add Transaction</span>
@@ -553,7 +553,7 @@ const DashboardPage = () => {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="dashboard-alert"
+          className="dashboard-alert rounded-xl border border-[#E8EAF6] bg-white"
         >
           <p className="font-semibold">Complete your profile to personalize your dashboard.</p>
           <p className="dashboard-alert-subtitle">
@@ -561,7 +561,7 @@ const DashboardPage = () => {
           </p>
           <Link
             to="/profile-setup"
-            className="dashboard-alert-link"
+            className="dashboard-alert-link bg-fincheck-accent hover:bg-fincheck-accent-hover"
           >
             Open profile setup
           </Link>
@@ -582,7 +582,7 @@ const DashboardPage = () => {
       </section>
 
       {!summaryLoading && hasNoSummaryData && (
-        <p className="dashboard-empty">
+        <p className="dashboard-empty rounded-lg border border-[#E8EAF6] bg-white text-[#6B7280]">
           No transactions yet. Open Transactions and add your first income or expense.
         </p>
       )}
@@ -604,26 +604,26 @@ const DashboardPage = () => {
         </div>
 
         <div className="dashboard-operations-side">
-          <article className="info-card dashboard-budget-card">
+          <article className="dashboard-budget-card rounded-xl border border-[#E8EAF6] bg-white p-3 shadow-[0_8px_24px_-20px_rgba(30,30,45,0.2)]">
             <header className="info-card-header flex items-center justify-between gap-3">
-              <h2>Budget Overview</h2>
-              <Link to="/budget" className="text-xs font-semibold text-[color:var(--app-brand)]">Edit Budget</Link>
+              <h2 className="text-[13px] font-semibold text-[#1E1E2D]">Budget Overview</h2>
+              <Link to="/budget" className="text-[11px] font-semibold text-[#5B5BD6] hover:text-[#4848C2]">Edit Budget</Link>
             </header>
 
             {budgetOverview.hasBudgetData ? (
               <div className="info-card-body grid gap-3">
-                <div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl border border-[var(--dash-border)] bg-[#f8fafc] px-3 py-2">
+                <div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl border border-[#E8EAF6] bg-white px-3 py-2">
                   <div className="grid gap-0.5">
-                    <span className="text-[0.68rem] uppercase tracking-[0.12em] text-[color:var(--dash-muted)]">Total Spent</span>
-                    <strong className="text-lg text-[color:var(--dash-text)]">{currencyFormatter(budgetOverview.totalSpent)}</strong>
+                    <span className="text-[0.68rem] uppercase tracking-[0.12em] text-[#9CA3AF]">Total Spent</span>
+                    <strong className="text-lg text-fincheck-text-primary">{currencyFormatter(budgetOverview.totalSpent)}</strong>
                     <span className={`text-[0.7rem] font-semibold ${budgetOverview.remaining < 0 ? 'text-[#b91c1c]' : 'text-[#047857]'}`}>
                       {remainingLabel}
                     </span>
                   </div>
-                  <div className="grid justify-items-end gap-1 text-[0.65rem] text-[color:var(--dash-muted)]">
+                  <div className="grid justify-items-end gap-1 text-[0.65rem] text-[#9CA3AF]">
                     <span>Trend</span>
                     {sparklinePoints ? (
-                      <svg viewBox="0 0 120 32" className="h-8 w-28 text-[#2563eb]" role="img" aria-label="Spending trend">
+                      <svg viewBox="0 0 120 32" className="h-8 w-28 text-fincheck-accent" role="img" aria-label="Spending trend">
                         <polyline
                           points={sparklinePoints}
                           fill="none"
@@ -646,15 +646,15 @@ const DashboardPage = () => {
                       {budgetOverview.percentUsed}%
                     </strong>
                   </div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-[#eef2f7]">
+                  <div className="h-2.5 overflow-hidden rounded-full bg-[#E5E7EB]">
                     <motion.div
-                      className={`${budgetOverview.usageStatus === 'over' ? 'bg-gradient-to-r from-[#ef4444] to-[#f97316]' : budgetOverview.usageStatus === 'warn' ? 'bg-gradient-to-r from-[#f59e0b] to-[#f97316]' : 'bg-gradient-to-r from-[#22c55e] to-[#16a34a]'}`}
+                      className={`h-full rounded-full ${budgetOverview.usageStatus === 'over' ? 'bg-gradient-to-r from-[#ef4444] to-[#f97316]' : budgetOverview.usageStatus === 'warn' ? 'bg-gradient-to-r from-[#f59e0b] to-[#f97316]' : 'bg-[#5B5BD6]'}`}
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.max(0, Math.min(100, budgetOverview.percentUsed))}%` }}
                       transition={{ duration: 0.8, ease: 'easeOut' }}
                     />
                   </div>
-                  <div className="flex items-center justify-between text-[0.65rem] text-[color:var(--dash-muted)]">
+                  <div className="flex items-center justify-between text-[0.65rem] text-[#9CA3AF]">
                     <span>{currencyFormatter(budgetOverview.totalSpent)} spent</span>
                     <span>{currencyFormatter(budgetOverview.totalBudget)} budget</span>
                   </div>
@@ -665,14 +665,14 @@ const DashboardPage = () => {
                     <div key={columnIndex} className="grid gap-1">
                       {column.map((item) => (
                         <div key={item.name} className="flex items-center justify-between text-[0.7rem]">
-                          <span className="text-[color:var(--dash-muted)]">{item.name}</span>
-                          <strong className="text-[color:var(--dash-text)]">{currencyFormatter(item.amount)}</strong>
+                          <span className="text-[#9CA3AF]">{item.name}</span>
+                          <strong className="text-fincheck-text-primary">{currencyFormatter(item.amount)}</strong>
                         </div>
                       ))}
                     </div>
                   ))}
                   {!budgetBreakdown.length && (
-                    <p className="text-[0.7rem] text-[color:var(--dash-muted)]">No spending recorded yet.</p>
+                    <p className="text-[0.7rem] text-[#9CA3AF]">No spending recorded yet.</p>
                   )}
                 </div>
               </div>
@@ -699,9 +699,9 @@ const DashboardPage = () => {
       </section>
 
       <section className="dashboard-ai-bottom">
-        <article className="info-card">
+        <article className="rounded-xl border border-[#E8EAF6] bg-white p-3 shadow-[0_8px_24px_-20px_rgba(30,30,45,0.2)]">
           <header className="info-card-header">
-            <h2>AI Insights</h2>
+            <h2 className="text-[13px] font-semibold text-[#1E1E2D]">AI Insights</h2>
           </header>
 
           {aiInsightsLoading ? (

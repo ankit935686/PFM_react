@@ -11,6 +11,12 @@ const cardIcon = {
 const StatCard = ({ card, currencyFormatter }) => {
   const Icon = cardIcon[card.key] || Landmark;
   const positive = card.trendDirection === 'up';
+  const gradientByKey = {
+    balance: 'bg-[linear-gradient(135deg,#6EC6E6,#89D8C0)]',
+    income: 'bg-[linear-gradient(135deg,#A78BFA,#818CF8)]',
+    expenses: 'bg-[linear-gradient(135deg,#F472B6,#FB923C)]',
+    savings: 'bg-[linear-gradient(135deg,#C4B5FD,#A5B4FC)]',
+  };
 
   return (
     <motion.article
@@ -18,42 +24,42 @@ const StatCard = ({ card, currencyFormatter }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
       whileHover={{ y: -4 }}
-      className="stat-card flex flex-col gap-2 rounded-2xl border border-[var(--dash-border)] bg-[var(--dash-surface)] p-3 shadow-[var(--dash-shadow)] md:p-4"
+      className={`!font-[Nunito] flex min-h-[116px] flex-col gap-2 rounded-xl border border-transparent p-3 text-white shadow-[0_8px_20px_-16px_rgba(30,30,45,0.4)] ${gradientByKey[card.key] || gradientByKey.balance}`}
     >
-      <div className="stat-card-head flex items-center justify-between gap-3">
-        <p className="stat-card-label text-xs font-semibold text-[color:var(--dash-muted)]">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[10px] font-medium tracking-[0.01em] text-white/90">
           {card.title}
         </p>
-        <span className="stat-card-icon flex h-7 w-7 items-center justify-center rounded-lg bg-[#f1f5f9] text-[color:var(--dash-text)]">
-          <Icon size={14} />
+        <span className="flex h-[28px] w-[28px] items-center justify-center rounded-md bg-white/20 text-white">
+          <Icon size={17} strokeWidth={2.2} />
         </span>
       </div>
 
-      <p className="stat-card-value text-lg font-semibold text-[color:var(--dash-text)]">
+      <p className="text-[28px] font-semibold leading-none tracking-[-0.01em] text-white">
         {currencyFormatter(card.value)}
       </p>
 
       <div
-        className={`stat-card-trend inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[0.65rem] font-semibold ${
+        className={`mt-auto inline-flex w-fit items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-semibold ${
           positive
-            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-            : 'border-rose-200 bg-rose-50 text-rose-700'
+            ? 'border-[#DCFCE7] bg-[#DCFCE7] text-[#15803D]'
+            : 'border-[#FEE2E2] bg-[#FEE2E2] text-[#DC2626]'
         }`}
       >
         {positive ? (
           <>
-            <ArrowUpRight size={12} />
+            <ArrowUpRight size={13} />
             <span>{card.trend}</span>
           </>
         ) : (
           <>
-            <ArrowDownRight size={12} />
+            <ArrowDownRight size={13} />
             <span>{card.trend}</span>
           </>
         )}
       </div>
 
-      <div className="stat-card-spark h-1 rounded-full bg-[#f1f5f9]" aria-hidden="true" />
+      <div className="h-1 rounded-full bg-white/30" aria-hidden="true" />
     </motion.article>
   );
 };

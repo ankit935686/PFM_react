@@ -5,9 +5,9 @@ import { PiggyBank, Target, TrendingUp } from 'lucide-react';
 const SavingsSection = ({ savingsTracker, currencyFormatter, onSetGoal, loading }) => {
   if (loading) {
     return (
-      <article className="info-card">
-        <header className="info-card-header">
-          <h2>Monthly Savings Tracker</h2>
+      <article className="!font-[Nunito] rounded-xl border border-[#E8EAF6] bg-white p-3 shadow-[0_8px_24px_-20px_rgba(30,30,45,0.2)]">
+        <header className="mb-2">
+          <h2 className="text-[13px] font-semibold text-[#1E1E2D]">Monthly Savings Tracker</h2>
         </header>
         <div className="info-card-body">
           <div className="h-24 rounded animate-pulse" style={{ background: 'var(--app-surface-soft)' }} />
@@ -18,9 +18,9 @@ const SavingsSection = ({ savingsTracker, currencyFormatter, onSetGoal, loading 
 
   if (!savingsTracker) {
     return (
-      <article className="info-card">
-        <header className="info-card-header">
-          <h2>Monthly Savings Tracker</h2>
+      <article className="!font-[Nunito] rounded-xl border border-[#E8EAF6] bg-white p-3 shadow-[0_8px_24px_-20px_rgba(30,30,45,0.2)]">
+        <header className="mb-2">
+          <h2 className="text-[13px] font-semibold text-[#1E1E2D]">Monthly Savings Tracker</h2>
         </header>
         <p className="info-card-empty">Loading savings data...</p>
       </article>
@@ -34,55 +34,49 @@ const SavingsSection = ({ savingsTracker, currencyFormatter, onSetGoal, loading 
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="info-card"
+      className="!font-[Nunito] rounded-xl border border-[#E8EAF6] bg-white p-3 shadow-[0_8px_24px_-20px_rgba(30,30,45,0.2)]"
     >
-      <header className="info-card-header">
-        <h2>Monthly Savings Tracker</h2>
+      <header className="mb-2">
+        <h2 className="text-[13px] font-semibold text-[#1E1E2D]">Monthly Savings Tracker</h2>
       </header>
 
-      <div className="info-card-body">
+      <div>
         <div className="space-y-4">
           {/* Main Display Text */}
-          <div
-            className="p-3 rounded-lg"
-            style={{
-              background: 'linear-gradient(90deg, rgba(124, 92, 255, 0.08), rgba(56, 189, 248, 0.12))',
-              border: '1px solid rgba(124, 92, 255, 0.18)',
-            }}
-          >
-            <p className="text-sm font-semibold" style={{ color: 'var(--app-brand)' }}>
+          <div className="rounded-lg border border-[#D9DCFF] bg-[linear-gradient(90deg,rgba(91,91,214,0.08),rgba(110,198,230,0.12))] p-3">
+            <p className="text-xs font-semibold text-[#5B5BD6]">
               {displayText}
             </p>
           </div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-3 gap-2">
-            <div className="p-3 rounded-lg" style={{ background: 'var(--app-surface)' }}>
-              <div className="flex items-center gap-2 mb-1">
-                <TrendingUp size={14} style={{ color: 'var(--app-brand)' }} />
-                <span className="text-xs" style={{ color: 'var(--app-text-muted)' }}>This Month</span>
+            <div className="rounded-lg bg-[#F8F9FF] p-3">
+              <div className="mb-1 flex items-center gap-2">
+                <TrendingUp size={14} className="text-[#5B5BD6]" />
+                <span className="text-xs text-[#9CA3AF]">This Month</span>
               </div>
-              <p className="font-semibold" style={{ color: 'var(--app-brand)' }}>
+              <p className="text-xs font-semibold text-[#5B5BD6]">
                 {currencyFormatter(monthlySavings)}
               </p>
             </div>
 
-            <div className="p-3 rounded-lg" style={{ background: 'var(--app-surface)' }}>
-              <div className="flex items-center gap-2 mb-1">
-                <Target size={14} style={{ color: 'var(--app-warning)' }} />
-                <span className="text-xs" style={{ color: 'var(--app-text-muted)' }}>Goal</span>
+            <div className="rounded-lg bg-[#F8F9FF] p-3">
+              <div className="mb-1 flex items-center gap-2">
+                <Target size={14} className="text-[#FB923C]" />
+                <span className="text-xs text-[#9CA3AF]">Goal</span>
               </div>
-              <p className="font-semibold" style={{ color: 'var(--app-warning)' }}>
+              <p className="text-xs font-semibold text-[#FB923C]">
                 {currencyFormatter(goalAmount)}
               </p>
             </div>
 
-            <div className="p-3 rounded-lg" style={{ background: 'var(--app-surface)' }}>
-              <div className="flex items-center gap-2 mb-1">
-                <PiggyBank size={14} style={{ color: 'var(--app-success)' }} />
-                <span className="text-xs" style={{ color: 'var(--app-text-muted)' }}>Progress</span>
+            <div className="rounded-lg bg-[#F8F9FF] p-3">
+              <div className="mb-1 flex items-center gap-2">
+                <PiggyBank size={14} className="text-[#34D399]" />
+                <span className="text-xs text-[#9CA3AF]">Progress</span>
               </div>
-              <p className="font-semibold" style={{ color: 'var(--app-success)' }}>
+              <p className="text-xs font-semibold text-[#34D399]">
                 {savingsPercentage}%
               </p>
             </div>
@@ -91,12 +85,12 @@ const SavingsSection = ({ savingsTracker, currencyFormatter, onSetGoal, loading 
           {/* Progress Bar */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs" style={{ color: 'var(--app-text-muted)' }}>Goal Progress</span>
-              <span className="text-xs font-medium" style={{ color: 'var(--app-text)' }}>{progressStatus}</span>
+              <span className="text-xs text-[#9CA3AF]">Goal Progress</span>
+              <span className="text-xs font-medium text-[#1E1E2D]">{progressStatus}</span>
             </div>
-            <div className="progress-track">
+            <div className="progress-track h-2 overflow-hidden rounded-full bg-[#E5E7EB]">
               <motion.div
-                className="progress-fill"
+                className="progress-fill h-full bg-[#6EC6E6]"
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(100, savingsPercentage)}%` }}
                 transition={{ duration: 0.8, ease: 'easeOut' }}
@@ -122,13 +116,13 @@ const SavingsSection = ({ savingsTracker, currencyFormatter, onSetGoal, loading 
           <div className="flex flex-wrap gap-2 pt-1">
             <button
               onClick={onSetGoal}
-              className="savings-action-button"
+              className="savings-action-button rounded-md border border-[#E8EAF6] px-3 py-2 text-[11px] font-semibold text-[#5B5BD6] hover:bg-[#EEF0FF]"
               type="button"
             >
               Set Monthly Goal
             </button>
 
-            <Link to="/savings" className="savings-action-button savings-action-button--primary">
+            <Link to="/savings" className="savings-action-button savings-action-button--primary rounded-md bg-[#5B5BD6] px-3 py-2 text-[11px] font-semibold text-white hover:bg-[#4848C2]">
               Open Savings
             </Link>
           </div>

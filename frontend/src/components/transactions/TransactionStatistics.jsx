@@ -4,11 +4,11 @@ import { TrendingDown, TrendingUp, DollarSign, Hash } from 'lucide-react';
 const TransactionStatistics = ({ statistics, currencyFormatter, loading }) => {
   if (loading || !statistics) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="mx-6 mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[1, 2, 3, 4].map((item) => (
           <div
             key={item}
-            className="h-24 bg-gradient-to-br from-gray-700 to-gray-800 rounded-lg animate-pulse"
+            className="h-24 animate-pulse rounded-xl border border-gray-100 bg-white"
           />
         ))}
       </div>
@@ -20,33 +20,33 @@ const TransactionStatistics = ({ statistics, currencyFormatter, loading }) => {
       label: 'Total Income',
       value: currencyFormatter(statistics.totalIncome),
       icon: TrendingUp,
-      color: 'from-emerald-500/10 to-emerald-600/10',
-      textColor: 'text-emerald-400',
-      iconColor: 'text-emerald-500',
+      textColor: 'text-[#15803D]',
+      iconColor: 'text-[#15803D]',
+      note: 'All income in selected range',
     },
     {
       label: 'Total Expense',
       value: currencyFormatter(statistics.totalExpense),
       icon: TrendingDown,
-      color: 'from-red-500/10 to-red-600/10',
-      textColor: 'text-red-400',
-      iconColor: 'text-red-500',
+      textColor: 'text-[#DC2626]',
+      iconColor: 'text-[#DC2626]',
+      note: 'All expense in selected range',
     },
     {
       label: 'Net Balance',
       value: currencyFormatter(statistics.netAmount),
       icon: DollarSign,
-      color: statistics.netAmount >= 0 ? 'from-blue-500/10 to-blue-600/10' : 'from-orange-500/10 to-orange-600/10',
-      textColor: statistics.netAmount >= 0 ? 'text-blue-400' : 'text-orange-400',
-      iconColor: statistics.netAmount >= 0 ? 'text-blue-500' : 'text-orange-500',
+      textColor: statistics.netAmount >= 0 ? 'text-[#15803D]' : 'text-[#DC2626]',
+      iconColor: statistics.netAmount >= 0 ? 'text-[#15803D]' : 'text-[#DC2626]',
+      note: 'Income minus expense',
     },
     {
       label: 'Transactions',
       value: statistics.transactionCount,
       icon: Hash,
-      color: 'from-purple-500/10 to-purple-600/10',
-      textColor: 'text-purple-400',
-      iconColor: 'text-purple-500',
+      textColor: 'text-[#5B5BD6]',
+      iconColor: 'text-[#5B5BD6]',
+      note: `${statistics.incomeCount} income, ${statistics.expenseCount} expense`,
     },
   ];
 
@@ -54,7 +54,7 @@ const TransactionStatistics = ({ statistics, currencyFormatter, loading }) => {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="grid grid-cols-2 md:grid-cols-4 gap-4"
+      className="mx-6 mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
     >
       {stats.map((stat, index) => {
         const Icon = stat.icon;
@@ -64,20 +64,16 @@ const TransactionStatistics = ({ statistics, currencyFormatter, loading }) => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className={`p-4 rounded-lg bg-gradient-to-br ${stat.color} border border-gray-700`}
+            className="rounded-xl border border-gray-100 bg-white p-5"
           >
-            <div className="flex items-start justify-between mb-3">
+            <div className="mb-3 flex items-start justify-between">
               <div>
-                <p className="text-xs text-gray-400 mb-1">{stat.label}</p>
-                <p className={`text-lg font-bold ${stat.textColor}`}>{stat.value}</p>
+                <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-gray-400">{stat.label}</p>
+                <p className={`text-2xl font-semibold ${stat.textColor}`}>{stat.value}</p>
               </div>
               <Icon size={20} className={stat.iconColor} />
             </div>
-            {stat.label === 'Transactions' && statistics.transactionCount > 0 && (
-              <p className="text-xs text-gray-400">
-                {statistics.incomeCount} income, {statistics.expenseCount} expense
-              </p>
-            )}
+            <p className="text-xs text-gray-400">{stat.note}</p>
           </motion.div>
         );
       })}

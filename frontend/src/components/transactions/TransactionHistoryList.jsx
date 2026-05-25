@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 
 const TransactionHistoryList = ({
   transactions,
@@ -11,9 +10,9 @@ const TransactionHistoryList = ({
 }) => {
   if (loading) {
     return (
-      <div className="space-y-2">
+      <div className="mx-6 space-y-2">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-16 bg-gray-700 rounded-lg animate-pulse" />
+          <div key={i} className="h-16 animate-pulse rounded-lg bg-gray-100" />
         ))}
       </div>
     );
@@ -21,8 +20,8 @@ const TransactionHistoryList = ({
 
   if (transactions.length === 0) {
     return (
-      <div className="text-center py-12 px-4 bg-[#0B0F19] border border-[#1F2937] rounded-lg">
-        <p className="text-[#9CA3AF]">No transactions found. Try adjusting your filters.</p>
+      <div className="mx-6 rounded-xl border border-gray-100 bg-white px-4 py-12 text-center">
+        <p className="text-gray-500">No transactions found. Try adjusting your filters.</p>
       </div>
     );
   }
@@ -31,7 +30,7 @@ const TransactionHistoryList = ({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-2"
+      className="mx-6 overflow-hidden rounded-xl border border-gray-100 bg-white"
     >
       {transactions.map((transaction, index) => {
         const isIncome = transaction.type === 'Income';
@@ -43,53 +42,44 @@ const TransactionHistoryList = ({
             initial={{ opacity: 0, x: -12 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="p-4 bg-[#111827] border border-[#1F2937] rounded-lg hover:border-[#374151] transition flex items-center justify-between group"
+            className="flex items-center gap-4 border-b border-gray-50 px-5 py-4 transition last:border-none hover:bg-[#F8F9FF]"
           >
-            <div className="flex items-center gap-4 flex-1">
+            <div className="flex min-w-0 flex-1 items-center gap-4">
               <div
-                className={`p-3 rounded-lg ${
-                  isIncome ? 'bg-emerald-500/10' : 'bg-red-500/10'
+                className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                  isIncome ? 'bg-[#DCFCE7] text-[#15803D]' : 'bg-[#FEE2E2] text-[#DC2626]'
                 }`}
               >
-                <Icon
-                  size={20}
-                  className={isIncome ? 'text-emerald-400' : 'text-red-400'}
-                />
+                <Icon size={18} />
               </div>
 
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-[#E5E7EB] truncate">{transaction.category}</p>
-                <p className="text-sm text-[#9CA3AF]">
-                  {new Date(transaction.date).toLocaleDateString()} •{' '}
-                  {transaction.paymentMethod}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-gray-800">{transaction.category}</p>
+                <p className="text-xs text-gray-400">
+                  {new Date(transaction.date).toLocaleDateString()} • {transaction.paymentMethod}
                 </p>
                 {transaction.notes && (
-                  <p className="text-xs text-[#6B7280] truncate mt-1">{transaction.notes}</p>
+                  <p className="mt-1 max-w-[420px] truncate text-xs italic text-gray-300">{transaction.notes}</p>
                 )}
               </div>
             </div>
 
-            <div className="text-right ml-4">
-              <p
-                className={`font-bold text-lg ${
-                  isIncome ? 'text-emerald-400' : 'text-red-400'
-                }`}
-              >
+            <div className="ml-4 text-right">
+              <p className={`text-base font-semibold ${isIncome ? 'text-[#15803D]' : 'text-[#DC2626]'}`}>
                 {isIncome ? '+' : '-'}{currencyFormatter(transaction.amount)}
               </p>
-              <p className="text-xs text-[#9CA3AF] capitalize">{transaction.type}</p>
+              <p className="text-xs text-gray-400 capitalize">{transaction.type}</p>
             </div>
           </motion.div>
         );
       })}
 
-      {/* Pagination */}
       {pagination && pagination.pages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-[#1F2937]">
+        <div className="mt-2 flex items-center justify-center gap-2 border-t border-gray-100 px-5 py-4">
           <button
             onClick={() => onPageChange(pagination.page - 1)}
             disabled={pagination.page === 1}
-            className="p-2 rounded-lg border border-[#1F2937] text-[#9CA3AF] hover:border-[#374151] disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="rounded-lg border border-gray-200 p-2 text-gray-500 transition hover:border-[#5B5BD6] hover:text-[#5B5BD6] disabled:cursor-not-allowed disabled:opacity-50"
             type="button"
           >
             <ChevronLeft size={18} />
@@ -104,10 +94,10 @@ const TransactionHistoryList = ({
                 <button
                   key={pageNum}
                   onClick={() => onPageChange(pageNum)}
-                  className={`w-8 h-8 rounded-lg font-medium text-sm transition ${
+                  className={`h-8 w-8 rounded-lg text-sm font-medium transition ${
                     isActive
-                      ? 'bg-blue-500 text-white'
-                      : 'border border-[#1F2937] text-[#9CA3AF] hover:border-[#374151]'
+                      ? 'bg-[#5B5BD6] text-white'
+                      : 'border border-gray-200 text-gray-500 hover:border-[#5B5BD6] hover:text-[#5B5BD6]'
                   }`}
                   type="button"
                 >
@@ -120,13 +110,13 @@ const TransactionHistoryList = ({
           <button
             onClick={() => onPageChange(pagination.page + 1)}
             disabled={pagination.page === pagination.pages}
-            className="p-2 rounded-lg border border-[#1F2937] text-[#9CA3AF] hover:border-[#374151] disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="rounded-lg border border-gray-200 p-2 text-gray-500 transition hover:border-[#5B5BD6] hover:text-[#5B5BD6] disabled:cursor-not-allowed disabled:opacity-50"
             type="button"
           >
             <ChevronRight size={18} />
           </button>
 
-          <span className="ml-4 text-sm text-[#9CA3AF]">
+          <span className="ml-4 text-sm text-gray-500">
             Page {pagination.page} of {pagination.pages} ({pagination.total} total)
           </span>
         </div>

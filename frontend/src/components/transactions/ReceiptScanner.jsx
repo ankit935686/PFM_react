@@ -4,6 +4,30 @@ import { useAuth } from '../../context/AuthContext';
 
 const expenseCategories = ['Food', 'Transport', 'Shopping', 'Rent', 'Utilities', 'Health', 'Education', 'Entertainment', 'Travel', 'Groceries', 'Bills', 'Other'];
 
+const mapDetectedToAppCategory = (rawCategory) => {
+  const normalized = String(rawCategory || '').trim().toLowerCase();
+  const map = {
+    dining: 'Food',
+    grocery: 'Groceries',
+    groceries: 'Groceries',
+    food: 'Food',
+    transport: 'Transport',
+    shopping: 'Shopping',
+    rent: 'Rent',
+    utilities: 'Utilities',
+    health: 'Health',
+    education: 'Education',
+    entertainment: 'Entertainment',
+    travel: 'Travel',
+    bills: 'Bills',
+    other: 'Other',
+    uncategorized: 'Other',
+  };
+
+  const mapped = map[normalized] || 'Other';
+  return expenseCategories.includes(mapped) ? mapped : 'Other';
+};
+
 const ReceiptScanner = ({ onClose, onAdd, onSaved }) => {
   const { currentUser } = useAuth();
   const [fileName, setFileName] = useState('');
@@ -60,9 +84,9 @@ const ReceiptScanner = ({ onClose, onAdd, onSaved }) => {
           const compressed = canvas.toDataURL('image/jpeg', 0.72);
           URL.revokeObjectURL(objectUrl);
           resolve(compressed.split(',')[1]);
-        } catch (error) {
+        } catch (scanError) {
           URL.revokeObjectURL(objectUrl);
-          reject(error);
+          reject(scanError);
         }
       };
 
@@ -103,7 +127,6 @@ const ReceiptScanner = ({ onClose, onAdd, onSaved }) => {
 
   const addTransaction = async () => {
     if (!result) return;
-    // Prefer parsed.total and dominant category across all suggested items
     const parsed = result.parsed || {};
     const suggested = (result.suggestedTransactions && result.suggestedTransactions[0]) || null;
     const amount = parsed.total || (suggested ? suggested.amount : null) || '';
@@ -124,7 +147,6 @@ const ReceiptScanner = ({ onClose, onAdd, onSaved }) => {
         await onAdd({
           amount,
           category,
-          // Use today's date for ledger entry so it appears in current period dashboards.
           date: new Date().toISOString().slice(0, 10),
           notes,
         });
@@ -141,36 +163,38 @@ const ReceiptScanner = ({ onClose, onAdd, onSaved }) => {
   };
 
   return (
-    <div className="rounded-2xl border border-[#1F2937] bg-[#0B0F19] p-4">
+    <div className="max-h-[34vh] overflow-y-auto rounded-xl border border-[#E2E4EF] bg-[#F8F8FC] p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-100">Scan receipt</h3>
-        <button type="button" onClick={onClose} className="text-sm text-slate-400">Close</button>
+        <h3 className="text-sm font-semibold text-[#1E1E2D]">Scan receipt</h3>
+        <button type="button" onClick={onClose} className="text-sm text-gray-400">Close</button>
       </div>
 
       <div className="grid gap-2">
-        <label className="text-xs text-slate-300">Upload or take photo</label>
+        <label className="mb-1 text-[11px] uppercase tracking-wider text-gray-400">Upload or take photo</label>
         <input
           type="file"
           accept="image/*"
           capture="environment"
           onChange={handleFile}
-          className="text-sm text-slate-300"
+          className="text-[12px] font-medium text-[#5B5BD6] file:mr-3 file:rounded-lg file:border file:border-[#E2E4EF] file:bg-white file:px-2 file:py-1 file:text-[12px] file:text-gray-500"
         />
+        {fileName && <p className="truncate text-[12px] font-medium text-[#5B5BD6]">{fileName}</p>}
 
-        {loading && <p className="text-sm text-slate-400">Analyzing image...</p>}
-        {error && <p className="text-sm text-rose-300">{error}</p>}
+        {loading && <p className="text-sm text-gray-500">Analyzing image...</p>}
+        {error && <p className="text-sm text-rose-500">{error}</p>}
 
         {result && (
-          <div className="mt-2 rounded-lg border border-white/5 bg-white/2 p-3 text-slate-100">
-            <p className="text-sm">Merchant: <strong>{result.parsed?.merchant || 'Unknown'}</strong></p>
-            <p className="text-sm">Date: <strong>{result.parsed?.date || 'Unknown'}</strong></p>
-            <p className="text-sm">Total: <strong>{result.parsed?.total ?? 'Unknown'}</strong></p>
-            <label className="mt-2 grid gap-1 text-xs text-slate-300">
-              <span>Detected category (review before adding)</span>
+          <div className="mt-2 rounded-lg border border-[#E8EAF6] bg-white p-3">
+            <p className="text-[13px] font-semibold text-[#1E1E2D]">{result.parsed?.merchant || 'Unknown merchant'}</p>
+            <p className="mt-1 text-[12px] text-gray-500">Date: <strong>{result.parsed?.date || 'Unknown'}</strong></p>
+            <p className="text-[12px] text-gray-500">Total: <strong className="text-[15px] font-bold text-[#1E1E2D]">{result.parsed?.total ?? 'Unknown'}</strong></p>
+
+            <label className="mt-3 grid gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.07em] text-gray-400">Detected category</span>
               <select
                 value={selectedCategory}
                 onChange={(event) => setSelectedCategory(event.target.value)}
-                className="rounded-lg border border-[#1F2937] bg-[#0B0F19] px-2.5 py-2 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                className="h-[38px] rounded-lg border border-[#E2E4EF] bg-[#F8F8FC] px-3 text-[13px] text-[#1E1E2D] outline-none transition focus:border-[#5B5BD6] focus:bg-white focus:ring-2 focus:ring-[#5B5BD6]/10"
               >
                 {expenseCategories.map((item) => (
                   <option key={item} value={item}>
@@ -179,23 +203,27 @@ const ReceiptScanner = ({ onClose, onAdd, onSaved }) => {
                 ))}
               </select>
             </label>
+
             {Array.isArray(result.parsed?.items) && result.parsed.items.length > 0 && (
-              <div className="mt-2 text-xs text-slate-300">
-                <p className="font-medium">Items:</p>
-                <ul className="ml-3 list-disc">
+              <div className="mt-2 text-[11px] text-gray-500">
+                <p className="font-medium text-gray-600">Items:</p>
+                <ul className="mt-1 space-y-1">
                   {result.parsed.items.slice(0, 5).map((it, idx) => (
-                    <li key={idx} className="truncate">{it.name} — {it.totalPrice ?? it.unitPrice ?? ''}</li>
+                    <li key={idx} className="truncate text-gray-500">
+                      <span className="text-gray-700">{it.name}</span>
+                      <span className="float-right font-medium text-[#5B5BD6]">{it.totalPrice ?? it.unitPrice ?? ''}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
             )}
 
-            <div className="mt-3 flex justify-end gap-2">
+            <div className="mt-3">
               <button
                 type="button"
                 onClick={addTransaction}
                 disabled={saving}
-                className="rounded-xl bg-linear-to-r from-cyan-400 to-blue-500 px-3 py-1 text-sm font-semibold text-slate-950 disabled:opacity-70"
+                className="mt-3 h-[38px] w-full rounded-lg bg-[#5B5BD6] text-[13px] font-medium text-white hover:bg-[#4848C2] disabled:opacity-70"
               >
                 {saving ? 'Saving...' : 'Add transaction'}
               </button>
@@ -208,26 +236,3 @@ const ReceiptScanner = ({ onClose, onAdd, onSaved }) => {
 };
 
 export default ReceiptScanner;
-  const mapDetectedToAppCategory = (rawCategory) => {
-    const normalized = String(rawCategory || '').trim().toLowerCase();
-    const map = {
-      dining: 'Food',
-      grocery: 'Groceries',
-      groceries: 'Groceries',
-      food: 'Food',
-      transport: 'Transport',
-      shopping: 'Shopping',
-      rent: 'Rent',
-      utilities: 'Utilities',
-      health: 'Health',
-      education: 'Education',
-      entertainment: 'Entertainment',
-      travel: 'Travel',
-      bills: 'Bills',
-      other: 'Other',
-      uncategorized: 'Other',
-    };
-
-    const mapped = map[normalized] || 'Other';
-    return expenseCategories.includes(mapped) ? mapped : 'Other';
-  };
