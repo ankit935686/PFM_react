@@ -8,10 +8,7 @@ const isProfileComplete = (profile) => {
   return Boolean(
     profile.fullName &&
       profile.country &&
-      profile.currency &&
-      Number(profile.monthlyIncome) > 0 &&
-      Number(profile.monthlyBudget) > 0 &&
-      Number(profile.savingsGoal) > 0
+      profile.currency
   );
 };
 

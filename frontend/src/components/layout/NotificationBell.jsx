@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, BellRing, CheckCheck, CircleAlert, CircleCheck, CircleDashed, IndianRupee } from 'lucide-react';
-import { useBudgets } from '../../context/BudgetContext';
-import { useExpenses } from '../../context/ExpenseContext';
-import { useIncome } from '../../context/IncomeContext';
-import { useSavings } from '../../context/SavingsContext';
+import api from '../../lib/api';
+import { useAuth } from '../../context/AuthContext';
 
 const STORAGE_PREFIX = 'pfm-notifications-read';
 
@@ -14,50 +13,25 @@ const severityRank = {
   info: 3,
 };
 
-const getMonthKey = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${now.getMonth() + 1}`;
-};
-
-const getCurrentMonthEntries = (items) => {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
-
-  return (items || []).filter((item) => {
-    if (item?.month && item?.year) {
-      return Number(item.month) === month && Number(item.year) === year;
-    }
-
-    if (!item?.date) {
-      return false;
-    }
-
-    const date = new Date(item.date);
-    if (Number.isNaN(date.getTime())) {
-      return false;
-    }
-
-    return date.getMonth() + 1 === month && date.getFullYear() === year;
-  });
-};
-
-const amountNumber = (value) => {
-  const parsed = Number(value);
-  return Number.isNaN(parsed) ? 0 : parsed;
-};
-
 const NotificationBell = ({ userId, userLabel }) => {
-  const { budgets } = useBudgets();
-  const { expenses } = useExpenses();
-  const { income } = useIncome();
-  const { savingsTracker } = useSavings();
-
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [readMap, setReadMap] = useState({});
+  const [notifications, setNotifications] = useState([]);
   const panelRef = useRef(null);
 
   const storageKey = `${STORAGE_PREFIX}:${userId || 'guest'}`;
+
+  const getAuthHeaders = async () => {
+    if (!currentUser) return {};
+    const token = await currentUser.getIdToken();
+    return {
+      Authorization: `Bearer ${token}`,
+      'x-firebase-uid': currentUser.uid,
+      'x-firebase-email': currentUser.email || '',
+    };
+  };
 
   useEffect(() => {
     try {
@@ -72,166 +46,77 @@ const NotificationBell = ({ userId, userLabel }) => {
     try {
       localStorage.setItem(storageKey, JSON.stringify(readMap));
     } catch (_error) {
-      // Ignore storage issues silently.
+      // ignore storage issues
     }
   }, [readMap, storageKey]);
 
   useEffect(() => {
-    if (!isOpen) {
-      return undefined;
-    }
-
+    if (!isOpen) return undefined;
     const onClickOutside = (event) => {
       if (panelRef.current && !panelRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
-
     document.addEventListener('mousedown', onClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', onClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', onClickOutside);
   }, [isOpen]);
 
-  const notifications = useMemo(() => {
-    const monthKey = getMonthKey();
-    const monthBudgets = getCurrentMonthEntries(budgets);
-    const monthExpenses = getCurrentMonthEntries(expenses);
-    const monthIncome = getCurrentMonthEntries(income);
+  useEffect(() => {
+    let isMounted = true;
 
-    const expenseByCategory = monthExpenses.reduce((acc, expense) => {
-      const category = expense?.category || 'Others';
-      acc[category] = (acc[category] || 0) + amountNumber(expense?.amount);
-      return acc;
-    }, {});
-
-    const list = [];
-
-    if (!monthBudgets.length && monthExpenses.length > 0) {
-      list.push({
-        id: `budget-missing-${monthKey}`,
-        severity: 'warning',
-        title: 'No budget set for this month',
-        description: 'Add monthly category budgets to monitor overspending.',
-        feature: 'Budget',
-      });
-    }
-
-    monthBudgets.forEach((budget) => {
-      const allocated = amountNumber(budget?.amount);
-      const spent = amountNumber(expenseByCategory[budget?.category]);
-      if (allocated <= 0) {
+    const loadNotifications = async () => {
+      if (!currentUser?.uid) {
+        if (isMounted) setNotifications([]);
         return;
       }
 
-      const usage = Math.round((spent / allocated) * 100);
-
-      if (usage >= 100) {
-        list.push({
-          id: `budget-over-${budget.id || budget._id || budget.category}-${monthKey}`,
-          severity: 'critical',
-          title: `${budget.category} budget exceeded`,
-          description: `Spent Rs.${Math.round(spent)} on Rs.${Math.round(allocated)} allocated.`,
-          feature: 'Budget',
-        });
-      } else if (usage >= 80) {
-        list.push({
-          id: `budget-warning-${budget.id || budget._id || budget.category}-${monthKey}`,
-          severity: 'warning',
-          title: `${budget.category} budget near limit`,
-          description: `${usage}% of this category budget is already used.`,
-          feature: 'Budget',
-        });
+      try {
+        const headers = await getAuthHeaders();
+        const [calendarResponse, groupResponse] = await Promise.all([
+          api.get('/api/calendar/notifications?daysAhead=5', { headers }),
+          api.get('/api/groups/notifications', { headers }),
+        ]);
+        const calendarItems = (calendarResponse.data?.notifications || []).map((item) => ({
+          ...item,
+          feature: item.type === 'reminder_due' ? 'Reminder' : 'Goal',
+          source: 'calendar',
+        }));
+        const groupItems = (groupResponse.data?.notifications || []).map((item) => ({
+          ...item,
+          id: `group-${item._id}`,
+          title: item.title,
+          description: item.description,
+          date: item.createdAt,
+          severity: item.type === 'you_owe' ? 'critical' : item.type === 'you_are_owed' ? 'success' : 'info',
+          feature: 'Group',
+          source: 'group',
+          groupId: item.groupId,
+          rawId: item._id,
+          read: item.read,
+        }));
+        const items = [...calendarItems, ...groupItems];
+        if (isMounted) {
+          setNotifications(items.sort((a, b) => severityRank[a.severity] - severityRank[b.severity]));
+        }
+      } catch (_error) {
+        if (isMounted) setNotifications([]);
       }
-    });
+    };
 
-    const totalIncome = monthIncome.reduce((sum, item) => sum + amountNumber(item?.amount), 0);
-    const totalExpenses = monthExpenses.reduce((sum, item) => sum + amountNumber(item?.amount), 0);
-    const net = totalIncome - totalExpenses;
+    loadNotifications();
+    const timer = setInterval(loadNotifications, 60000);
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, [currentUser]);
 
-    if (monthIncome.length || monthExpenses.length) {
-      if (net < 0) {
-        list.push({
-          id: `cashflow-negative-${monthKey}`,
-          severity: 'critical',
-          title: 'Negative cash flow this month',
-          description: `Expenses exceed income by Rs.${Math.round(Math.abs(net))}.`,
-          feature: 'Income/Expense',
-        });
-      } else if (net === 0) {
-        list.push({
-          id: `cashflow-zero-${monthKey}`,
-          severity: 'warning',
-          title: 'Break-even cash flow',
-          description: 'Income and expense are currently equal this month.',
-          feature: 'Income/Expense',
-        });
-      } else {
-        list.push({
-          id: `cashflow-positive-${monthKey}`,
-          severity: 'success',
-          title: 'Positive cash flow',
-          description: `Net positive Rs.${Math.round(net)} this month.`,
-          feature: 'Income/Expense',
-        });
-      }
-    }
-
-    if (savingsTracker) {
-      const monthlySavings = amountNumber(savingsTracker.monthlySavings);
-      const savingsPercentage = amountNumber(savingsTracker.savingsPercentage);
-      const goalAmount = amountNumber(savingsTracker.goalAmount);
-
-      if (goalAmount <= 0) {
-        list.push({
-          id: `savings-goal-missing-${monthKey}`,
-          severity: 'info',
-          title: 'Savings goal not set',
-          description: 'Set a savings goal to receive better progress notifications.',
-          feature: 'Savings',
-        });
-      } else if (savingsPercentage >= 100) {
-        list.push({
-          id: `savings-achieved-${monthKey}`,
-          severity: 'success',
-          title: 'Savings goal achieved',
-          description: savingsTracker.displayText || 'Great work, you reached your savings target.',
-          feature: 'Savings',
-        });
-      } else if (monthlySavings < 0) {
-        list.push({
-          id: `savings-negative-${monthKey}`,
-          severity: 'critical',
-          title: 'Savings is negative this month',
-          description: 'Current month expenses are higher than income.',
-          feature: 'Savings',
-        });
-      } else {
-        list.push({
-          id: `savings-progress-${monthKey}`,
-          severity: 'info',
-          title: 'Savings progress update',
-          description:
-            savingsTracker.displayText || `${Math.round(savingsPercentage)}% of the monthly goal is completed.`,
-          feature: 'Savings',
-        });
-      }
-    }
-
-    list.push({
-      id: `future-features-${monthKey}`,
-      severity: 'info',
-      title: 'Future feature notifications ready',
-      description: 'This bell supports adding upcoming alerts without UI changes.',
-      feature: 'System',
-    });
-
-    return list
-      .sort((a, b) => severityRank[a.severity] - severityRank[b.severity])
-      .slice(0, 12);
-  }, [budgets, expenses, income, savingsTracker]);
-
-  const unreadCount = notifications.reduce((count, item) => (readMap[item.id] ? count : count + 1), 0);
+  const unreadCount = useMemo(() => {
+    return notifications.reduce((count, item) => {
+      if (item.source === 'group') return item.read ? count : count + 1;
+      return readMap[item.id] ? count : count + 1;
+    }, 0);
+  }, [notifications, readMap]);
 
   const markAllRead = () => {
     const next = { ...readMap };
@@ -241,25 +126,56 @@ const NotificationBell = ({ userId, userLabel }) => {
     setReadMap(next);
   };
 
-  const toggleRead = (id) => {
+  const markCalendarNotificationRead = (id) => {
     setReadMap((current) => ({
       ...current,
-      [id]: !current[id],
+      [id]: true,
     }));
   };
 
+  const markGroupNotificationRead = async (rawId) => {
+    try {
+      const headers = await getAuthHeaders();
+      await api.put(`/api/groups/notifications/${rawId}/read`, {}, { headers });
+      setNotifications((current) => current.map((item) => (item.rawId === rawId ? { ...item, read: true } : item)));
+    } catch (_error) {
+      // ignore
+    }
+  };
+
   const getSeverityIcon = (severity) => {
-    if (severity === 'critical') {
-      return <CircleAlert size={15} className="notify-dot notify-dot-critical" />;
-    }
-    if (severity === 'warning') {
-      return <CircleDashed size={15} className="notify-dot notify-dot-warning" />;
-    }
-    if (severity === 'success') {
-      return <CircleCheck size={15} className="notify-dot notify-dot-success" />;
-    }
+    if (severity === 'critical') return <CircleAlert size={15} className="notify-dot notify-dot-critical" />;
+    if (severity === 'warning') return <CircleDashed size={15} className="notify-dot notify-dot-warning" />;
+    if (severity === 'success') return <CircleCheck size={15} className="notify-dot notify-dot-success" />;
     return <IndianRupee size={15} className="notify-dot notify-dot-info" />;
   };
+
+  const openOnCalendar = (item) => {
+    if (item.source === 'group') {
+      if (!item.read && item.rawId) {
+        markGroupNotificationRead(item.rawId);
+      }
+      if (item.groupId) {
+        navigate(`/groups/${item.groupId}`);
+      } else {
+        navigate('/groups');
+      }
+      setIsOpen(false);
+      return;
+    }
+    const dateKey = item?.date ? new Date(item.date).toISOString().slice(0, 10) : '';
+    if (!dateKey) return;
+    markCalendarNotificationRead(item.id);
+    navigate(`/calendar?date=${dateKey}`);
+    setIsOpen(false);
+  };
+
+  const visibleNotifications = useMemo(() => {
+    return notifications.filter((item) => {
+      if (item.source === 'group') return !item.read;
+      return !readMap[item.id];
+    });
+  }, [notifications, readMap]);
 
   return (
     <div className="notify-wrap" ref={panelRef}>
@@ -279,7 +195,7 @@ const NotificationBell = ({ userId, userLabel }) => {
           <header className="notify-header">
             <div>
               <h3>Notifications</h3>
-              <p>{userLabel ? `For ${userLabel}` : 'Financial alerts and updates'}</p>
+              <p>{userLabel ? `For ${userLabel}` : 'Date-based reminders and goal alerts'}</p>
             </div>
             <button className="notify-read-all" type="button" onClick={markAllRead}>
               <CheckCheck size={14} />
@@ -288,14 +204,13 @@ const NotificationBell = ({ userId, userLabel }) => {
           </header>
 
           <div className="notify-list">
-            {!notifications.length && <p className="notify-empty">No notifications right now.</p>}
-            {notifications.map((item) => {
-              const isRead = Boolean(readMap[item.id]);
+            {!visibleNotifications.length && <p className="notify-empty">No notifications right now.</p>}
+            {visibleNotifications.map((item) => {
+              const isRead = item.source === 'group' ? Boolean(item.read) : Boolean(readMap[item.id]);
               return (
                 <article
                   key={item.id}
                   className={`notify-item notify-${item.severity} ${isRead ? 'notify-read' : ''}`}
-                  onClick={() => toggleRead(item.id)}
                 >
                   <div className="notify-title-row">
                     <span className="notify-icon">{getSeverityIcon(item.severity)}</span>
@@ -304,6 +219,27 @@ const NotificationBell = ({ userId, userLabel }) => {
                   </div>
                   <p>{item.description}</p>
                   <span className="notify-feature">{item.feature}</span>
+                  <button
+                    type="button"
+                    className="mt-2 mr-2 rounded-md border border-[#374151] px-2 py-1 text-xs text-slate-200"
+                    onClick={() => {
+                      if (item.source === 'group') {
+                        if (item.rawId) markGroupNotificationRead(item.rawId);
+                        return;
+                      }
+                      markCalendarNotificationRead(item.id);
+                    }}
+                    disabled={isRead}
+                  >
+                    Mark as read
+                  </button>
+                  <button
+                    type="button"
+                    className="mt-2 rounded-md border border-[#374151] px-2 py-1 text-xs text-slate-200"
+                    onClick={() => openOnCalendar(item)}
+                  >
+                    Open in Calendar
+                  </button>
                 </article>
               );
             })}

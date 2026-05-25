@@ -1,9 +1,13 @@
 import { X } from 'lucide-react';
+import { useState } from 'react';
+import ReceiptScanner from './ReceiptScanner';
 
 const expenseCategories = ['Food', 'Transport', 'Shopping', 'Rent', 'Utilities', 'Health', 'Education', 'Entertainment', 'Travel', 'Groceries', 'Bills', 'Other'];
 const incomeCategories = ['Salary', 'Freelance', 'Business', 'Investments', 'Rental', 'Bonus', 'Other'];
 
-const ModalForm = ({ open, form, saving, onChange, onClose, onSubmit, mode }) => {
+const ModalForm = ({ open, form, saving, onChange, onClose, onSubmit, mode, onAddScan }) => {
+  const [scannerOpen, setScannerOpen] = useState(false);
+
   if (!open) {
     return null;
   }
@@ -98,6 +102,14 @@ const ModalForm = ({ open, form, saving, onChange, onClose, onSubmit, mode }) =>
           <div className="mt-2 flex justify-end gap-2 md:col-span-2">
             <button
               type="button"
+              onClick={() => setScannerOpen((s) => !s)}
+              className="rounded-xl border border-[#1F2937] px-4 py-2 text-sm text-slate-200 hover:border-slate-500"
+            >
+              Scan receipt
+            </button>
+
+            <button
+              type="button"
               onClick={onClose}
               className="rounded-xl border border-[#1F2937] px-4 py-2 text-sm text-slate-200 hover:border-slate-500"
             >
@@ -111,6 +123,25 @@ const ModalForm = ({ open, form, saving, onChange, onClose, onSubmit, mode }) =>
               {saving ? 'Saving...' : mode === 'edit' ? 'Update' : 'Add'}
             </button>
           </div>
+
+          {scannerOpen && (
+            <div className="md:col-span-2 mt-4">
+              <ReceiptScanner
+                onClose={() => setScannerOpen(false)}
+                onSaved={() => {
+                  setScannerOpen(false);
+                  onClose();
+                }}
+                onAdd={(payload) => {
+                  if (onAddScan) {
+                    return onAddScan(payload);
+                  }
+
+                  return Promise.resolve();
+                }}
+              />
+            </div>
+          )}
         </form>
       </div>
     </div>

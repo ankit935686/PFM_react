@@ -4,6 +4,7 @@ import {
   BarChart,
   Cell,
   CartesianGrid,
+  Label,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -11,13 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '../ui/chart';
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '../ui/chart';
 
 const monthLabelFromKey = (monthKey) => {
   if (!monthKey || !String(monthKey).includes('-')) {
@@ -44,26 +39,40 @@ const ChartsSection = ({
     value: Number(item.total || 0),
     color: item.color,
   }));
+  const totalExpense = pieData.reduce((sum, item) => sum + Number(item.value || 0), 0);
+  const topCategory = pieData.length
+    ? pieData.reduce((max, item) => (item.value > max.value ? item : max), pieData[0])
+    : null;
+  const categoryRows = pieData
+    .map((item) => ({
+      ...item,
+      percentage: totalExpense > 0 ? Math.round((item.value / totalExpense) * 100) : 0,
+    }))
+    .sort((a, b) => b.value - a.value);
+
+  const expenseChartConfig = pieData.reduce((acc, item) => {
+    acc[item.name] = { label: item.name, color: item.color };
+    return acc;
+  }, {});
 
   const trendLineData = incomeExpenseTrendData.map((item) => ({
     month: monthLabelFromKey(item.monthKey),
     income: Number(item.totalIncome || 0),
     expenses: Number(item.totalExpenses || 0),
+    cashflow: Number(item.totalIncome || 0) - Number(item.totalExpenses || 0),
   }));
+  const latestTrend = trendLineData[trendLineData.length - 1] || { income: 0, expenses: 0, cashflow: 0 };
+  const avgCashflow = trendLineData.length
+    ? trendLineData.reduce((sum, item) => sum + Number(item.cashflow || 0), 0) / trendLineData.length
+    : 0;
 
   const chartConfig = {
-    income: {
-      label: 'Income',
-      color: 'var(--color-chart-2)',
-    },
-    expenses: {
-      label: 'Expenses',
-      color: 'var(--color-chart-5)',
-    },
+    income: { label: 'Income', color: 'var(--color-chart-2)' },
+    expenses: { label: 'Expenses', color: 'var(--color-chart-5)' },
   };
 
   return (
-    <section className="chart-grid">
+    <section className="chart-grid dashboard-chart-grid">
       <motion.article
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -74,54 +83,80 @@ const ChartsSection = ({
           <h2>Expense Breakdown</h2>
           <span>{selectedPeriodLabel || 'Selected Month'}</span>
         </header>
-        <div className="chart-body">
+        <div className="chart-body chart-body-expense">
           {loading ? (
             <div className="chart-empty">Loading chart...</div>
           ) : hasCategoryData ? (
-            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={68}
-                  outerRadius={95}
-                  paddingAngle={2}
-                  animationDuration={900}
-                >
-                  {pieData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.color} />
+            <div className="expense-breakdown-compact expense-breakdown-donut">
+              <ChartContainer config={expenseChartConfig} className="expense-donut-chart">
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                  <PieChart>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Pie
+                      data={pieData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={62}
+                      outerRadius="80%"
+                      strokeWidth={5}
+                      paddingAngle={2}
+                      animationDuration={900}
+                      cornerRadius={10}
+                    >
+                      {pieData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                      <Label
+                        content={({ viewBox }) => {
+                          if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
+                            return (
+                              <text
+                                x={viewBox.cx}
+                                y={viewBox.cy}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                              >
+                                <tspan
+                                  x={viewBox.cx}
+                                  y={viewBox.cy}
+                                  className="expense-donut-label-total"
+                                >
+                                  {currencyFormatter(totalExpense)}
+                                </tspan>
+                                <tspan
+                                  x={viewBox.cx}
+                                  y={(viewBox.cy || 0) + 22}
+                                  className="expense-donut-label-caption"
+                                >
+                                  Total
+                                </tspan>
+                              </text>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+
+              <div className="expense-breakdown-legend">
+                <ul className="expense-legend-list">
+                  {categoryRows.map((item) => (
+                    <li key={item.name} title={item.name}>
+                      <span className="legend-chip-dot" style={{ backgroundColor: item.color }} />
+                      <span className="legend-item-name">{item.name}</span>
+                      <strong className="legend-item-value">{currencyFormatter(item.value)}</strong>
+                    </li>
                   ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: 'var(--color-card)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '12px',
-                  }}
-                  labelStyle={{ color: 'var(--color-foreground)' }}
-                  formatter={(value) => [currencyFormatter(value), 'Amount']}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+                </ul>
+              </div>
+            </div>
           ) : (
             <div className="chart-empty">No expense categories yet.</div>
           )}
         </div>
-
-        {hasCategoryData && !loading && (
-          <ul className="chart-legend">
-            {pieData.map((item) => (
-              <li key={item.name}>
-                <span className="legend-label">
-                  <span className="legend-dot" style={{ backgroundColor: item.color }} />
-                  {item.name}
-                </span>
-                <span>{currencyFormatter(item.value)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
       </motion.article>
 
       <motion.article
@@ -134,14 +169,28 @@ const ChartsSection = ({
           <h2>Income vs Expense Overview</h2>
           <span>Up to {selectedPeriodLabel || 'Selected Month'}</span>
         </header>
-        <div className="chart-body">
+        <div className="trend-summary-strip">
+          <div className="trend-summary-item">
+            <span>Latest income</span>
+            <strong>{currencyFormatter(latestTrend.income)}</strong>
+          </div>
+          <div className="trend-summary-item">
+            <span>Latest expense</span>
+            <strong>{currencyFormatter(latestTrend.expenses)}</strong>
+          </div>
+          <div className="trend-summary-item">
+            <span>Avg cashflow</span>
+            <strong>{currencyFormatter(avgCashflow)}</strong>
+          </div>
+        </div>
+        <div className="chart-body chart-body-trend">
           {loading ? (
             <div className="chart-empty">Loading chart...</div>
           ) : hasTrendData ? (
             <ChartContainer config={chartConfig} className="chart-container">
               <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                <BarChart data={trendLineData} barSize={18} accessibilityLayer>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                <BarChart data={trendLineData} barGap={4} barCategoryGap="20%" accessibilityLayer>
+                  <CartesianGrid strokeDasharray="2 4" stroke="var(--color-border)" vertical={false} />
                   <XAxis
                     dataKey="month"
                     stroke="var(--color-muted-foreground)"
@@ -156,8 +205,8 @@ const ChartsSection = ({
                     formatter={(value, name) => [currencyFormatter(value), name === 'income' ? 'Income' : 'Expenses']}
                   />
                   <ChartLegend content={<ChartLegendContent />} />
-                  <Bar dataKey="income" fill="var(--color-income)" radius={4} animationDuration={900} />
-                  <Bar dataKey="expenses" fill="var(--color-expenses)" radius={4} animationDuration={900} />
+                  <Bar dataKey="income" fill="var(--color-income)" radius={[6, 6, 0, 0]} maxBarSize={16} animationDuration={900} />
+                  <Bar dataKey="expenses" fill="var(--color-expenses)" radius={[6, 6, 0, 0]} maxBarSize={16} animationDuration={900} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
@@ -166,6 +215,7 @@ const ChartsSection = ({
           )}
         </div>
       </motion.article>
+
     </section>
   );
 };

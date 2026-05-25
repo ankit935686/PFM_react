@@ -1,13 +1,31 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ArrowLeftRight, Wallet, PiggyBank, ChartNoAxesCombined, Settings } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, Wallet, PiggyBank, ChartNoAxesCombined, Settings, CalendarDays, Users } from 'lucide-react';
 
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
-  { to: '/budget', label: 'Budget', icon: Wallet },
-  { to: '/savings', label: 'Savings', icon: PiggyBank },
-  { to: '/analytics', label: 'Analytics', icon: ChartNoAxesCombined },
-  { to: '/settings', label: 'Settings', icon: Settings },
+const navSections = [
+  {
+    label: 'Main',
+    items: [{ to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }],
+  },
+  {
+    label: 'Finance',
+    items: [
+      { to: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
+      { to: '/budget', label: 'Budget', icon: Wallet },
+      { to: '/savings', label: 'Savings', icon: PiggyBank },
+      { to: '/groups', label: 'Groups', icon: Users },
+    ],
+  },
+  {
+    label: 'Analytics',
+    items: [
+      { to: '/analytics', label: 'Analytics', icon: ChartNoAxesCombined },
+      { to: '/calendar', label: 'Calendar', icon: CalendarDays },
+    ],
+  },
+  {
+    label: 'Settings',
+    items: [{ to: '/settings', label: 'Settings', icon: Settings }],
+  },
 ];
 
 const AppSidebar = ({ mobileOpen, onToggleMobile, onLogout }) => {
@@ -36,36 +54,33 @@ const AppSidebar = ({ mobileOpen, onToggleMobile, onLogout }) => {
         </div>
 
         <nav className="sidebar-nav">
-          {navItems.map((item) => {
-            const Icon = item.icon;
+          {navSections.map((section) => (
+            <div key={section.label} className="sidebar-nav-section">
+              <p className="sidebar-nav-label">{section.label}</p>
+              {section.items.map((item) => {
+                const Icon = item.icon;
 
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `sidebar-link ${isActive ? 'is-active' : ''}`
-                }
-                onClick={() => {
-                  if (mobileOpen) {
-                    onToggleMobile();
-                  }
-                }}
-              >
-                <Icon size={16} />
-                <span>{item.label}</span>
-              </NavLink>
-            );
-          })}
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      `sidebar-link ${isActive ? 'is-active' : ''}`
+                    }
+                    onClick={() => {
+                      if (mobileOpen) {
+                        onToggleMobile();
+                      }
+                    }}
+                  >
+                    <Icon size={16} />
+                    <span>{item.label}</span>
+                  </NavLink>
+                );
+              })}
+            </div>
+          ))}
         </nav>
-
-        <div className="sidebar-card">
-          <p className="sidebar-card-title">Upgrade to Premium</p>
-          <p className="sidebar-card-text">Unlock exclusive features and AI insights.</p>
-          <button className="sidebar-card-button" type="button">
-            Upgrade Now
-          </button>
-        </div>
 
         <button className="sidebar-logout" type="button" onClick={onLogout}>
           Logout

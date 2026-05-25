@@ -4,6 +4,7 @@ const {
 	getExpenseCategoryTotals,
 	getMonthlyExpenseTotals,
 	getIncomeExpenseTrend,
+	getDashboardInsights,
 } = require('../controllers/dashboardController');
 const requireFirebaseUser = require('../middleware/authMiddleware');
 
@@ -14,5 +15,6 @@ router.get('/summary', getDashboardSummary);
 router.get('/analytics/expense-categories', getExpenseCategoryTotals);
 router.get('/analytics/monthly-expenses', getMonthlyExpenseTotals);
 router.get('/analytics/income-expense-trend', getIncomeExpenseTrend);
+router.get('/insights', getDashboardInsights);
 
 module.exports = router;

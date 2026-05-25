@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { Calendar, Menu, Moon, Plus, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../lib/api';
 import AppSidebar from './AppSidebar';
 import NotificationBell from './NotificationBell';
 
@@ -24,11 +25,13 @@ const AppLayout = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileName, setProfileName] = useState('');
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
-  const userLabel = currentUser?.displayName || currentUser?.email || 'Guest user';
+  const userLabel = profileName || currentUser?.displayName || currentUser?.email || 'Guest user';
   const userInitial = userLabel ? userLabel.trim().charAt(0).toUpperCase() : 'G';
   const availableYears = useMemo(() => {
     return Array.from({ length: 7 }, (_, index) => currentDate.getFullYear() - 3 + index);
@@ -51,6 +54,24 @@ const AppLayout = () => {
     await logout();
     navigate('/login');
   };
+
+  useEffect(() => {
+    const loadProfileName = async () => {
+      if (!currentUser?.uid) {
+        setProfileName('');
+        return;
+      }
+
+      try {
+        const response = await api.get(`/api/profile/${currentUser.uid}`);
+        setProfileName(response.data?.profile?.fullName || '');
+      } catch (_error) {
+        setProfileName('');
+      }
+    };
+
+    loadProfileName();
+  }, [currentUser?.uid]);
 
   return (
     <main className="app-shell">
@@ -110,17 +131,36 @@ const AppLayout = () => {
           </div>
 
           <div className="topbar-actions">
+            <Link to="/calendar" className="icon-btn topbar-mobile-calendar" aria-label="Open calendar">
+              <Calendar size={18} />
+            </Link>
             <NotificationBell userId={currentUser?.uid} userLabel={userLabel} />
             <button className="icon-btn" type="button" aria-label="Toggle theme">
               <Moon size={18} />
             </button>
 
-            <div className="user-pill">
-              <span className="user-avatar">{userInitial}</span>
-              <div>
-                <p className="user-greeting">Hi, {userLabel.split(' ')[0] || 'User'}</p>
-                <p className="user-subtitle">Personal Finance</p>
-              </div>
+            <div className="user-menu">
+              <button
+                className="user-pill"
+                type="button"
+                onClick={() => setUserMenuOpen((prev) => !prev)}
+                aria-haspopup="true"
+                aria-expanded={userMenuOpen}
+              >
+                <span className="user-avatar">{userInitial}</span>
+                <div className="user-pill-text">
+                  <p className="user-greeting">{userLabel}</p>
+                  <p className="user-subtitle">Personal Finance</p>
+                </div>
+              </button>
+
+              {userMenuOpen && (
+                <div className="user-dropdown">
+                  <Link to="/profile-setup" className="user-dropdown-link" onClick={() => setUserMenuOpen(false)}>
+                    Profile Setup
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </header>
@@ -130,7 +170,7 @@ const AppLayout = () => {
         </div>
       </section>
 
-      <Link to="/transactions?quickAdd=1" className="fab-add">
+      <Link to="/transactions?quickAdd=1" className="fab-add" aria-label="Add Transaction">
         <Plus size={16} />
       </Link>
     </main>

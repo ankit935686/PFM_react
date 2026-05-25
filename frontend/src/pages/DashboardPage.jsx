@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useBudgets } from '../context/BudgetContext';
 import { useExpenses } from '../context/ExpenseContext';
@@ -9,7 +10,7 @@ import api from '../lib/api';
 import { formatCurrency } from '../lib/currency';
 import StatCard from '../components/dashboard/StatCard';
 import ChartsSection from '../components/dashboard/ChartsSection';
-import TransactionsTable from '../components/dashboard/TransactionsTable';
+import { TransactionsTable } from '../components/dashboard/TransactionsTable';
 import SavingsSection from '../components/dashboard/SavingsSection';
 import SavingsGoalModal from '../components/dashboard/SavingsGoalModal';
 
@@ -45,36 +46,62 @@ const isInMonth = (value, month, year) => {
   return date.getMonth() + 1 === Number(month) && date.getFullYear() === Number(year);
 };
 
-const buildStatCards = (summary, currency) => [
-  {
-    key: 'balance',
-    title: 'Total Balance',
-    value: Number(summary.totalBalance || 0),
-    trend: `${currency}`,
-    trendDirection: Number(summary.totalBalance || 0) >= 0 ? 'up' : 'down',
-  },
-  {
-    key: 'income',
-    title: 'Monthly Income',
-    value: Number(summary.monthlyIncome || 0),
-    trend: `${currency}`,
-    trendDirection: 'up',
-  },
-  {
-    key: 'expenses',
-    title: 'Monthly Expenses',
-    value: Number(summary.monthlyExpenses || 0),
-    trend: `${currency}`,
-    trendDirection: 'down',
-  },
-  {
-    key: 'savings',
-    title: 'Savings',
-    value: Number(summary.totalSavings || 0),
-    trend: Number(summary.totalSavings || 0) >= 0 ? 'Net positive' : 'Net negative',
-    trendDirection: Number(summary.totalSavings || 0) >= 0 ? 'up' : 'down',
-  },
-];
+const formatPercent = (value) => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) {
+    return 'No prior month';
+  }
+
+  const rounded = Number(value).toFixed(1);
+  return `${Number(value) > 0 ? '+' : ''}${rounded}% vs last month`;
+};
+
+const buildSeries = (trendData, getter) => trendData.map((item) => Number(getter(item) || 0));
+
+const buildStatCards = (summary, comparison, trendData) => {
+  const incomeSeries = buildSeries(trendData, (item) => item.totalIncome);
+  const expenseSeries = buildSeries(trendData, (item) => item.totalExpenses);
+  const balanceSeries = trendData.map((item) => Number(item.totalIncome || 0) - Number(item.totalExpenses || 0));
+  const deltas = comparison?.deltas || {};
+
+  return [
+    {
+      key: 'balance',
+      title: 'Total Balance',
+      value: Number(summary.totalBalance || 0),
+      trend: formatPercent(deltas.savingsChange),
+      trendDirection: Number(summary.totalBalance || 0) >= 0 ? 'up' : 'down',
+      sparkline: balanceSeries,
+      detail: 'Selected period net position',
+    },
+    {
+      key: 'income',
+      title: 'Monthly Income',
+      value: Number(summary.monthlyIncome || 0),
+      trend: formatPercent(deltas.incomeChange),
+      trendDirection: Number(deltas.incomeChange || 0) >= 0 ? 'up' : 'down',
+      sparkline: incomeSeries,
+      detail: 'Cash inflow tracked this month',
+    },
+    {
+      key: 'expenses',
+      title: 'Monthly Expenses',
+      value: Number(summary.monthlyExpenses || 0),
+      trend: formatPercent(deltas.expenseChange),
+      trendDirection: Number(deltas.expenseChange || 0) <= 0 ? 'up' : 'down',
+      sparkline: expenseSeries,
+      detail: 'Outflow compared with last month',
+    },
+    {
+      key: 'savings',
+      title: 'Savings',
+      value: Number(summary.totalSavings || 0),
+      trend: formatPercent(deltas.savingsChange),
+      trendDirection: Number(summary.totalSavings || 0) >= 0 ? 'up' : 'down',
+      sparkline: balanceSeries,
+      detail: 'Monthly savings after spending',
+    },
+  ];
+};
 
 const DashboardPage = () => {
   const { currentUser } = useAuth();
@@ -87,6 +114,7 @@ const DashboardPage = () => {
   const selectedYear = outletContext.selectedYear || currentDate.getFullYear();
   const selectedPeriodLabel = outletContext.selectedPeriodLabel || `${monthOptions[selectedMonth - 1]} ${selectedYear}`;
   const [error, setError] = useState('');
+  const [showWelcomeHeader, setShowWelcomeHeader] = useState(false);
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [summaryLoading, setSummaryLoading] = useState(true);
@@ -104,6 +132,8 @@ const DashboardPage = () => {
   const [comparison, setComparison] = useState(null);
   const [selectedSavingsTracker, setSelectedSavingsTracker] = useState(null);
   const [showSavingsModal, setShowSavingsModal] = useState(false);
+  const [aiInsights, setAiInsights] = useState([]);
+  const [aiInsightsLoading, setAiInsightsLoading] = useState(false);
 
   const liveIncomeEntries = useMemo(
     () => income.map((entry) => ({ ...entry, kind: 'income' })),
@@ -122,16 +152,16 @@ const DashboardPage = () => {
     return !(
       profile.fullName &&
       profile.country &&
-      profile.currency &&
-      Number(profile.monthlyIncome) > 0 &&
-      Number(profile.monthlyBudget) > 0 &&
-      Number(profile.savingsGoal) > 0
+      profile.currency
     );
   }, [profile]);
 
   const currency = profile?.currency || 'INR';
 
-  const dashboardCards = useMemo(() => buildStatCards(summary, currency), [summary, currency]);
+  const dashboardCards = useMemo(
+    () => buildStatCards(summary, comparison, incomeExpenseTrendData),
+    [summary, comparison, incomeExpenseTrendData]
+  );
 
   const hasNoSummaryData = useMemo(() => {
     return (
@@ -207,81 +237,184 @@ const DashboardPage = () => {
       .slice(0, 5);
   }, [liveIncomeEntries, liveExpenseEntries, selectedMonth, selectedYear]);
 
-  const budgetProgressItems = useMemo(() => {
+  const budgetOverview = useMemo(() => {
     const periodBudgets = budgets.filter(
       (budget) => Number(budget.month) === Number(selectedMonth) && Number(budget.year) === Number(selectedYear)
     );
-
-    if (!periodBudgets.length) {
-      return [];
-    }
+    const budgetByCategory = periodBudgets.reduce((acc, budget) => {
+      const key = String(budget.category || 'Other');
+      acc[key] = (acc[key] || 0) + Number(budget.amount || 0);
+      return acc;
+    }, {});
 
     const expenseByCategory = expenses.reduce((acc, expense) => {
       if (!isInMonth(expense.date, selectedMonth, selectedYear)) {
         return acc;
       }
 
-      const key = expense.category;
+      const key = String(expense.category || 'Other');
       acc[key] = (acc[key] || 0) + Number(expense.amount || 0);
       return acc;
     }, {});
 
-    return periodBudgets.slice(0, 4).map((budget) => {
-      const spent = Number(expenseByCategory[budget.category] || 0);
-      const percent = budget.amount > 0 ? Math.min(100, Math.round((spent / budget.amount) * 100)) : 0;
+    const coreCategories = ['Food', 'Rent', 'Transport', 'Utilities'];
+    const spentByCore = coreCategories.reduce((acc, category) => {
+      acc[category] = Number(expenseByCategory[category] || 0);
+      return acc;
+    }, {});
 
-      return {
-        category: budget.category,
-        spent,
-        percent,
-      };
-    });
-  }, [budgets, expenses, selectedMonth, selectedYear]);
+    const otherSpent = Object.entries(expenseByCategory).reduce((total, [category, amount]) => {
+      return coreCategories.includes(category) ? total : total + Number(amount || 0);
+    }, 0);
 
-  const insights = useMemo(() => {
-    const items = [];
+    const totalBudgetFromBudgets = periodBudgets.reduce(
+      (sum, budget) => sum + Number(budget.amount || 0),
+      0
+    );
+    const totalBudget = totalBudgetFromBudgets > 0
+      ? totalBudgetFromBudgets
+      : Number(budgetPreview.monthlyBudget || 0);
+    const totalSpent = Number(summary.monthlyExpenses || 0);
+    const remaining = totalBudget - totalSpent;
+    const percentUsed = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+    const usageStatus = percentUsed >= 100 ? 'over' : percentUsed >= 80 ? 'warn' : 'safe';
 
-    if (Number(summary.monthlyExpenses || 0) > Number(summary.monthlyIncome || 0)) {
-      items.push({
-        title: 'Spending higher than income',
-        detail: 'Expenses exceeded income this month. Consider adjusting budgets.',
-      });
+    return {
+      spentByCore,
+      otherSpent,
+      totalBudget,
+      totalSpent,
+      remaining,
+      percentUsed,
+      usageStatus,
+      hasBudgetData: totalBudget > 0,
+      budgetByCategory,
+    };
+  }, [budgets, budgetPreview.monthlyBudget, expenses, selectedMonth, selectedYear, summary.monthlyExpenses]);
+
+  const dailyBudgetLeft = useMemo(() => {
+    const now = new Date();
+    const year = Number(selectedYear);
+    const monthIndex = Number(selectedMonth) - 1;
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const isCurrentPeriod = now.getFullYear() === year && now.getMonth() === monthIndex;
+    const remainingDays = isCurrentPeriod ? Math.max(1, daysInMonth - now.getDate() + 1) : daysInMonth;
+    return budgetOverview.remaining / remainingDays;
+  }, [budgetOverview.remaining, selectedMonth, selectedYear]);
+  const budgetCategoryMini = useMemo(() => {
+    return Object.entries(budgetOverview.spentByCore || {})
+      .map(([name, amount]) => ({ name, amount: Number(amount || 0) }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 4);
+  }, [budgetOverview.spentByCore]);
+
+  const budgetBreakdown = useMemo(() => {
+    const items = Object.entries(budgetOverview.spentByCore || {})
+      .map(([name, amount]) => ({ name, amount: Number(amount || 0) }))
+      .filter((item) => item.amount > 0);
+
+    if (budgetOverview.otherSpent > 0) {
+      items.push({ name: 'Other', amount: Number(budgetOverview.otherSpent || 0) });
     }
 
-    if (budgetPreview.usagePercent >= 80) {
-      items.push({
-        title: 'Budget nearly used',
-        detail: `You have used ${budgetPreview.usagePercent}% of your monthly budget.`,
-      });
+    return items.slice(0, 5);
+  }, [budgetOverview.otherSpent, budgetOverview.spentByCore]);
+
+  const spendTrend = useMemo(() => {
+    const points = expenses
+      .filter((expense) => isInMonth(expense.date, selectedMonth, selectedYear))
+      .sort((left, right) => new Date(left.date) - new Date(right.date))
+      .slice(-12)
+      .map((expense) => Number(expense.amount || 0));
+
+    const maxValue = Math.max(...points, 1);
+
+    return {
+      points: points.map((value) => value / maxValue),
+      maxValue,
+    };
+  }, [expenses, selectedMonth, selectedYear]);
+
+  const sparklinePoints = useMemo(() => {
+    if (spendTrend.points.length < 2) {
+      return '';
     }
 
-    if (recentActivity.length === 0) {
-      items.push({
-        title: 'No recent activity',
-        detail: 'Add your first income or expense to see insights here.',
+    const maxIndex = Math.max(1, spendTrend.points.length - 1);
+
+    return spendTrend.points
+      .map((value, index) => {
+        const x = (index / maxIndex) * 120;
+        const y = 32 - value * 24 - 4;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
+  }, [spendTrend.points]);
+
+  const remainingLabel = budgetOverview.remaining >= 0
+    ? `${currencyFormatter(budgetOverview.remaining)} remaining`
+    : `${currencyFormatter(Math.abs(budgetOverview.remaining))} over budget`;
+  const breakdownSplitIndex = Math.ceil(budgetBreakdown.length / 2);
+  const breakdownLeft = budgetBreakdown.slice(0, breakdownSplitIndex);
+  const breakdownRight = budgetBreakdown.slice(breakdownSplitIndex);
+  const fallbackInsights = useMemo(() => {
+    const next = [];
+    const topCategory = budgetCategoryMini[0];
+    if (budgetOverview.totalBudget > 0 && budgetOverview.percentUsed >= 90) {
+      next.push({
+        id: 'budget-risk',
+        title: 'Budget pressure is high',
+        detail: `${budgetOverview.percentUsed}% of your monthly budget is already used. Slow variable spending this week.`,
       });
     }
-
-    if (comparison?.deltas?.expenseChange !== null && comparison?.deltas?.expenseChange !== undefined) {
-      const direction = comparison.deltas.expenseChange > 0 ? 'increased' : 'decreased';
-
-      items.push({
-        title: 'Month-over-month expenses',
-        detail: `Expenses ${direction} by ${Math.abs(Math.round(comparison.deltas.expenseChange))}% versus ${comparison.previous.month}/${comparison.previous.year}.`,
+    if (Number(summary.totalSavings || 0) <= 0) {
+      next.push({
+        id: 'savings-nudge',
+        title: 'No savings buffer yet',
+        detail: 'Set a monthly savings goal and auto-transfer on income dates to build consistency.',
       });
     }
-
-    if (comparison?.deltas?.savingsChange !== null && comparison?.deltas?.savingsChange !== undefined) {
-      const direction = comparison.deltas.savingsChange > 0 ? 'improved' : 'softened';
-
-      items.push({
-        title: 'Savings trend',
-        detail: `Monthly savings ${direction} by ${Math.abs(Math.round(comparison.deltas.savingsChange))}% compared with the previous month.`,
+    if (topCategory && topCategory.amount > 0) {
+      next.push({
+        id: 'top-category',
+        title: `Highest spend: ${topCategory.name}`,
+        detail: `${currencyFormatter(topCategory.amount)} spent in ${topCategory.name}. Track this category weekly for better control.`,
       });
     }
+    if (!next.length) {
+      next.push({
+        id: 'healthy',
+        title: 'Spending pattern looks stable',
+        detail: 'Keep reviewing transactions weekly and compare month-to-month trends to sustain progress.',
+      });
+    }
+    return next.slice(0, 3);
+  }, [budgetCategoryMini, budgetOverview.percentUsed, budgetOverview.totalBudget, currencyFormatter, summary.totalSavings]);
 
-    return items.slice(0, 3);
-  }, [budgetPreview.usagePercent, comparison, recentActivity.length, summary]);
+  const monthSummaryLabel = useMemo(() => {
+    return {
+      netLabel: currencyFormatter(Number(summary.totalBalance || 0)),
+      incomeTrend: formatPercent(comparison?.deltas?.incomeChange),
+      expenseTrend: formatPercent(comparison?.deltas?.expenseChange),
+      savingsLabel: currencyFormatter(Number(summary.totalSavings || 0)),
+    };
+  }, [comparison?.deltas?.expenseChange, comparison?.deltas?.incomeChange, currencyFormatter, summary.totalBalance, summary.totalSavings]);
+
+  useEffect(() => {
+    if (!currentUser?.uid) {
+      setShowWelcomeHeader(false);
+      return;
+    }
+
+    const key = `dashboard_welcome_seen_${currentUser.uid}`;
+    const seen = window.sessionStorage.getItem(key);
+    if (!seen) {
+      setShowWelcomeHeader(true);
+      window.sessionStorage.setItem(key, '1');
+    } else {
+      setShowWelcomeHeader(false);
+    }
+  }, [currentUser?.uid]);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -360,16 +493,59 @@ const DashboardPage = () => {
     };
 
     loadDashboardData();
-  }, [currentUser, selectedMonth, selectedYear]);
+  }, [currentUser, selectedMonth, selectedYear, expenses, income]);
+
+  useEffect(() => {
+    const loadInsights = async () => {
+      if (!currentUser?.uid) {
+        setAiInsights([]);
+        return;
+      }
+
+      setAiInsightsLoading(true);
+      try {
+        const headers = await getAuthHeaders();
+        const response = await api.get(`/api/dashboard/insights?month=${selectedMonth}&year=${selectedYear}`, { headers });
+        setAiInsights(Array.isArray(response.data?.insights) ? response.data.insights : []);
+      } catch (_insightError) {
+        setAiInsights([]);
+      } finally {
+        setAiInsightsLoading(false);
+      }
+    };
+
+    loadInsights();
+  }, [currentUser, selectedMonth, selectedYear, comparison, budgetOverview.percentUsed]);
 
   return (
     <section className="dashboard-page">
-      <header className="dashboard-header">
-        <div>
-          <h1 className="dashboard-title">Dashboard</h1>
-          <p className="dashboard-subtitle">
-            Read-only summary of your finances with live analytics for {selectedPeriodLabel}.
-          </p>
+      <header className="dashboard-header-modern dashboard-hero p-4 md:p-5 relative">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div className="dashboard-hero-main">
+            <h1 className="dashboard-title text-3xl md:text-4xl font-semibold">
+              {profile?.fullName ? `Good Evening, ${profile.fullName}!` : 'Good evening!'}
+            </h1>
+
+            <p className="dashboard-subtitle text-sm text-[color:var(--dash-muted)]">
+              {`Here's your financial overview for ${selectedPeriodLabel}`}
+            </p>
+          </div>
+
+          <div className="dashboard-cta-row mt-1 flex flex-col items-start gap-2 md:mt-0 md:ml-0 md:text-right md:flex-row md:items-center md:gap-3 md:absolute md:top-4 md:right-6">
+            <Link
+              to="/transactions"
+              className="dashboard-cta dashboard-cta-secondary min-w-[150px] justify-center"
+            >
+              View History
+            </Link>
+            <Link
+              to="/transactions?quickAdd=1"
+              className="dashboard-cta dashboard-cta-primary min-w-[150px] justify-center flex items-center gap-2"
+            >
+              <span className="text-lg">+</span>
+              <span>Add Transaction</span>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -379,9 +555,9 @@ const DashboardPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="dashboard-alert"
         >
-          <p className="font-semibold">Complete your profile for more accurate budgeting insights.</p>
+          <p className="font-semibold">Complete your profile to personalize your dashboard.</p>
           <p className="dashboard-alert-subtitle">
-            Add monthly budget and savings target from the profile setup page.
+            Add your basic details and preferred currency to tailor the experience.
           </p>
           <Link
             to="/profile-setup"
@@ -392,7 +568,7 @@ const DashboardPage = () => {
         </motion.div>
       )}
 
-      <section className="stat-grid">
+      <section className="stat-grid mt-2 grid gap-3">
         {summaryLoading
           ? [1, 2, 3, 4].map((item) => (
               <article
@@ -411,42 +587,105 @@ const DashboardPage = () => {
         </p>
       )}
 
-      <ChartsSection
-        expenseCategoryData={expenseCategoryData}
-        monthlyExpenseData={monthlyExpenseData}
-        incomeExpenseTrendData={incomeExpenseTrendData}
-        currencyFormatter={currencyFormatter}
-        loading={analyticsLoading}
-        selectedPeriodLabel={selectedPeriodLabel}
-      />
+      <section className="dashboard-main-analytics">
+        <ChartsSection
+          expenseCategoryData={expenseCategoryData}
+          monthlyExpenseData={monthlyExpenseData}
+          incomeExpenseTrendData={incomeExpenseTrendData}
+          currencyFormatter={currencyFormatter}
+          loading={analyticsLoading}
+          selectedPeriodLabel={selectedPeriodLabel}
+        />
+      </section>
 
-      <section className="dashboard-lower">
-        <TransactionsTable recentActivity={recentActivity} currencyFormatter={currencyFormatter} />
+      <section className="dashboard-operations-grid">
+        <div className="dashboard-operations-main">
+          <TransactionsTable recentActivity={recentActivity} currencyFormatter={currencyFormatter} />
+        </div>
 
-        <div className="dashboard-side">
-          <article className="info-card">
-            <header className="info-card-header">
-              <h2>Budget Progress</h2>
-              <span>View All</span>
+        <div className="dashboard-operations-side">
+          <article className="info-card dashboard-budget-card">
+            <header className="info-card-header flex items-center justify-between gap-3">
+              <h2>Budget Overview</h2>
+              <Link to="/budget" className="text-xs font-semibold text-[color:var(--app-brand)]">Edit Budget</Link>
             </header>
 
-            {budgetProgressItems.length ? (
-              <div className="info-card-body">
-                {budgetProgressItems.map((item) => (
-                  <div key={item.category} className="progress-row">
-                    <div className="progress-labels">
-                      <span>{item.category}</span>
-                      <span>{currencyFormatter(item.spent)}</span>
-                    </div>
-                    <div className="progress-track">
-                      <div className="progress-fill" style={{ width: `${item.percent}%` }} />
-                    </div>
-                    <p className="progress-meta">{item.percent}% of monthly spend</p>
+            {budgetOverview.hasBudgetData ? (
+              <div className="info-card-body grid gap-3">
+                <div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl border border-[var(--dash-border)] bg-[#f8fafc] px-3 py-2">
+                  <div className="grid gap-0.5">
+                    <span className="text-[0.68rem] uppercase tracking-[0.12em] text-[color:var(--dash-muted)]">Total Spent</span>
+                    <strong className="text-lg text-[color:var(--dash-text)]">{currencyFormatter(budgetOverview.totalSpent)}</strong>
+                    <span className={`text-[0.7rem] font-semibold ${budgetOverview.remaining < 0 ? 'text-[#b91c1c]' : 'text-[#047857]'}`}>
+                      {remainingLabel}
+                    </span>
                   </div>
-                ))}
+                  <div className="grid justify-items-end gap-1 text-[0.65rem] text-[color:var(--dash-muted)]">
+                    <span>Trend</span>
+                    {sparklinePoints ? (
+                      <svg viewBox="0 0 120 32" className="h-8 w-28 text-[#2563eb]" role="img" aria-label="Spending trend">
+                        <polyline
+                          points={sparklinePoints}
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    ) : (
+                      <span className="text-[0.62rem]">No data</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <div className="flex items-center justify-between text-[0.72rem] font-semibold">
+                    <span>Budget used</span>
+                    <strong className={`text-[0.72rem] ${budgetOverview.usageStatus === 'over' ? 'text-[#b91c1c]' : budgetOverview.usageStatus === 'warn' ? 'text-[#b45309]' : 'text-[#047857]'}`}>
+                      {budgetOverview.percentUsed}%
+                    </strong>
+                  </div>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-[#eef2f7]">
+                    <motion.div
+                      className={`${budgetOverview.usageStatus === 'over' ? 'bg-gradient-to-r from-[#ef4444] to-[#f97316]' : budgetOverview.usageStatus === 'warn' ? 'bg-gradient-to-r from-[#f59e0b] to-[#f97316]' : 'bg-gradient-to-r from-[#22c55e] to-[#16a34a]'}`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.max(0, Math.min(100, budgetOverview.percentUsed))}%` }}
+                      transition={{ duration: 0.8, ease: 'easeOut' }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[0.65rem] text-[color:var(--dash-muted)]">
+                    <span>{currencyFormatter(budgetOverview.totalSpent)} spent</span>
+                    <span>{currencyFormatter(budgetOverview.totalBudget)} budget</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {[breakdownLeft, breakdownRight].map((column, columnIndex) => (
+                    <div key={columnIndex} className="grid gap-1">
+                      {column.map((item) => (
+                        <div key={item.name} className="flex items-center justify-between text-[0.7rem]">
+                          <span className="text-[color:var(--dash-muted)]">{item.name}</span>
+                          <strong className="text-[color:var(--dash-text)]">{currencyFormatter(item.amount)}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                  {!budgetBreakdown.length && (
+                    <p className="text-[0.7rem] text-[color:var(--dash-muted)]">No spending recorded yet.</p>
+                  )}
+                </div>
               </div>
             ) : (
-              <p className="info-card-empty">Add monthly budgets to see progress here.</p>
+              <div className="budget-overview-empty-card">
+                <div>
+                  <p className="budget-empty-title">No Budget Set</p>
+                  <p className="budget-empty-text">
+                    Set a monthly budget to unlock usage tracking, insights, and alerts.
+                  </p>
+                </div>
+                <Link to="/budget" className="budget-action-button primary">Set Monthly Budget</Link>
+              </div>
             )}
           </article>
 
@@ -456,26 +695,33 @@ const DashboardPage = () => {
             onSetGoal={() => setShowSavingsModal(true)}
             loading={summaryLoading}
           />
-
-          <article className="info-card">
-            <header className="info-card-header">
-              <h2>AI Insights</h2>
-            </header>
-
-            {insights.length ? (
-              <ul className="insights-list">
-                {insights.map((insight) => (
-                  <li key={insight.title}>
-                    <p className="insight-title">{insight.title}</p>
-                    <p className="insight-text">{insight.detail}</p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="info-card-empty">Insights will appear after a few transactions.</p>
-            )}
-          </article>
         </div>
+      </section>
+
+      <section className="dashboard-ai-bottom">
+        <article className="info-card">
+          <header className="info-card-header">
+            <h2>AI Insights</h2>
+          </header>
+
+          {aiInsightsLoading ? (
+            <p className="info-card-empty">Generating insights...</p>
+          ) : aiInsights.length || fallbackInsights.length ? (
+            <ul className="insights-list compact">
+              {(aiInsights.length ? aiInsights : fallbackInsights).slice(0, 3).map((insight) => (
+                <li key={insight.id}>
+                  <p className="insight-title">{insight.title}</p>
+                  <p className="insight-text">{insight.detail}</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="info-card-empty compact-empty">
+              <p>No AI insights yet for this period.</p>
+              <small>Tip: Add more transactions this month to unlock better guidance.</small>
+            </div>
+          )}
+        </article>
       </section>
 
       <SavingsGoalModal
@@ -497,8 +743,3 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
-
-
-
-
-

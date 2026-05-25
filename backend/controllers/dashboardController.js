@@ -1,6 +1,7 @@
 const Income = require('../models/incomeModel');
 const Expense = require('../models/expenseModel');
 const Savings = require('../models/savingsModel');
+const Budget = require('../models/budgetModel');
 
 const getUserIdFromRequest = (req) => {
   return req.userId || req.user?.userId || req.user?._id || req.user?.id || null;
@@ -458,9 +459,132 @@ const getIncomeExpenseTrend = async (req, res) => {
   }
 };
 
+const buildDynamicInsights = async ({ monthLabel, monthlyIncome, monthlyExpenses, savings, budgetUsage, expenseChange }) => {
+  if (!process.env.GROQ_API_KEY) {
+    return [];
+  }
+
+  const prompt = {
+    month: monthLabel,
+    metrics: {
+      monthlyIncome,
+      monthlyExpenses,
+      savings,
+      budgetUsagePercent: budgetUsage,
+      monthOverMonthExpenseChangePercent: expenseChange,
+    },
+    instructions: {
+      output: 'Return JSON only: { "insights": [ { "title": "...", "detail": "..." } ] }',
+      categories: ['spending_pattern', 'budget_warning', 'savings_suggestion', 'expense_trend'],
+      count: '2 to 4 practical insights, no fluff, no markdown',
+      style: 'concise professional fintech advisor',
+    },
+  };
+
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'llama3-8b-8192',
+        temperature: 0.25,
+        max_tokens: 320,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a finance analyst. Return strict JSON only with the requested shape.',
+          },
+          {
+            role: 'user',
+            content: JSON.stringify(prompt),
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = await response.json();
+    const content = data?.choices?.[0]?.message?.content?.trim();
+    if (!content) {
+      return [];
+    }
+
+    const parsed = JSON.parse(content);
+    const insights = Array.isArray(parsed?.insights) ? parsed.insights : [];
+    return insights
+      .filter((item) => item?.title && item?.detail)
+      .slice(0, 4)
+      .map((item, index) => ({
+        id: `${index}-${String(item.title).toLowerCase().replace(/\s+/g, '-')}`,
+        title: String(item.title),
+        detail: String(item.detail),
+      }));
+  } catch (_error) {
+    return [];
+  }
+};
+
+const getDashboardInsights = async (req, res) => {
+  try {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized: userId missing from auth middleware.' });
+    }
+
+    const { month, year } = parseMonthYear(req.query.month, req.query.year);
+    const { monthStart, monthEnd } = getDateBoundsForMonth(year, month);
+    const previous = getPreviousMonth(year, month);
+    const previousBounds = getDateBoundsForMonth(previous.year, previous.month);
+
+    const [incomeStats, expenseStats, previousExpenseStats, monthlyBudgetDoc] = await Promise.all([
+      aggregateIncomeStats(userId, monthStart, monthEnd),
+      aggregateExpenseStats(userId, monthStart, monthEnd),
+      aggregateExpenseStats(userId, previousBounds.monthStart, previousBounds.monthEnd),
+      Budget.find({ userId, month, year }).lean(),
+    ]);
+
+    const monthlyIncome = Number(incomeStats.monthlyIncome || 0);
+    const monthlyExpenses = Number(expenseStats.monthlyExpenses || 0);
+    const savings = monthlyIncome - monthlyExpenses;
+    const monthlyBudget = (monthlyBudgetDoc || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const budgetUsage = monthlyBudget > 0 ? Math.round((monthlyExpenses / monthlyBudget) * 100) : 0;
+    const expenseChange = Number(previousExpenseStats.monthlyExpenses || 0) > 0
+      ? ((monthlyExpenses - Number(previousExpenseStats.monthlyExpenses || 0)) / Number(previousExpenseStats.monthlyExpenses || 0)) * 100
+      : null;
+
+    const monthLabel = new Date(year, month - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+    const insights = await buildDynamicInsights({
+      monthLabel,
+      monthlyIncome,
+      monthlyExpenses,
+      savings,
+      budgetUsage,
+      expenseChange,
+    });
+
+    return res.status(200).json({
+      month: { month, year, monthLabel },
+      insights,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Failed to generate dashboard insights',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getDashboardSummary,
   getExpenseCategoryTotals,
   getMonthlyExpenseTotals,
   getIncomeExpenseTrend,
+  getDashboardInsights,
 };

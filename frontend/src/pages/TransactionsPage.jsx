@@ -32,6 +32,30 @@ const getValidCategoryForType = (type, category) => {
   return categories.includes(category) ? category : getDefaultCategoryForType(type);
 };
 
+const scannedCategoryMap = {
+  dining: 'Food',
+  groceries: 'Groceries',
+  grocery: 'Groceries',
+  transport: 'Transport',
+  shopping: 'Shopping',
+  utilities: 'Utilities',
+  health: 'Health',
+  education: 'Education',
+  entertainment: 'Entertainment',
+  travel: 'Travel',
+  rent: 'Rent',
+  bills: 'Bills',
+  food: 'Food',
+  other: 'Other',
+  uncategorized: 'Other',
+};
+
+const getScannedExpenseCategory = (category) => {
+  const normalized = String(category || '').trim().toLowerCase();
+  const mapped = scannedCategoryMap[normalized];
+  return getValidCategoryForType('Expense', mapped || 'Other');
+};
+
 const initialFilters = {
   search: '',
   type: 'All',
@@ -41,6 +65,19 @@ const initialFilters = {
 };
 
 const toDateInput = (value) => new Date(value).toISOString().slice(0, 10);
+
+const toSafeDateInput = (value) => {
+  if (!value) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  return parsed.toISOString().slice(0, 10);
+};
 
 const TransactionsPage = () => {
   const { currentUser } = useAuth();
@@ -221,6 +258,24 @@ const TransactionsPage = () => {
     }
   };
 
+  const addScannedExpense = async ({ amount, category, date, notes }) => {
+    const payloadAmount = Number(amount);
+
+    if (!Number.isFinite(payloadAmount) || payloadAmount <= 0) {
+      throw new Error('Scanned amount is not valid.');
+    }
+
+    const payload = {
+      amount: payloadAmount,
+      category: getScannedExpenseCategory(category),
+      date: toSafeDateInput(date),
+      paymentMethod: 'UPI',
+      notes: String(notes || '').trim(),
+    };
+
+    await createExpense(payload);
+  };
+
   const onDelete = async (item) => {
     const confirmed = window.confirm('Delete this transaction?');
     if (!confirmed) {
@@ -362,6 +417,7 @@ const TransactionsPage = () => {
         onClose={closeModal}
         onChange={onFormChange}
         onSubmit={onSubmit}
+        onAddScan={addScannedExpense}
       />
     </section>
   );

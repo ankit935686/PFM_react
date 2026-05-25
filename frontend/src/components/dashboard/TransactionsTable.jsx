@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
 
 const chips = ['All', 'Income', 'Expense'];
 
-const TransactionsTable = ({ recentActivity, currencyFormatter }) => {
+export const TransactionsTable = ({ recentActivity, currencyFormatter }) => {
   const [search, setSearch] = useState('');
   const [activeChip, setActiveChip] = useState('All');
 
@@ -63,12 +63,15 @@ const TransactionsTable = ({ recentActivity, currencyFormatter }) => {
             <div className="transaction-details">
               <p className="transaction-title">{entry.title}</p>
               <p className="transaction-meta">
-                {entry.category} ·{' '}
+                {entry.category} •{' '}
                 {new Date(entry.date).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
                 })}
               </p>
+            </div>
+            <div className={`transaction-status ${entry.kind === 'income' ? 'is-paid' : 'is-pending'}`}>
+              {entry.kind === 'income' ? 'Credited' : 'Debited'}
             </div>
             <div className="transaction-amount" data-kind={entry.kind}>
               {entry.kind === 'income' ? '+' : '-'}

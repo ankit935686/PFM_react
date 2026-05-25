@@ -12,6 +12,9 @@ import BudgetPage from './pages/BudgetPage'
 import SavingsPage from './pages/SavingsPage'
 import AnalyticsPage from './pages/AnalyticsPage'
 import SettingsPage from './pages/SettingsPage'
+import CalendarPage from './pages/CalendarPage'
+import GroupsPage from './pages/GroupsPage'
+import GroupDetailsPage from './pages/GroupDetailsPage'
 import './App.css'
 
 function App() {
@@ -47,6 +50,9 @@ function App() {
         <Route path="/savings" element={<SavingsPage />} />
         <Route path="/goals" element={<Navigate to="/savings" replace />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/groups" element={<GroupsPage />} />
+        <Route path="/groups/:groupId" element={<GroupDetailsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/profile-setup" element={<ProfileSetupPage />} />
         <Route path="/income" element={<Navigate to="/transactions" replace />} />

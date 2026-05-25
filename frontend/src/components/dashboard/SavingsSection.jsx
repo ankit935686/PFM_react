@@ -114,7 +114,7 @@ const SavingsSection = ({ savingsTracker, currencyFormatter, onSetGoal, loading 
               }}
             >
               <p className="text-xs font-medium" style={{ color: 'var(--app-success)' }}>
-                ✓ Savings goal achieved this month!
+                Savings goal achieved this month!
               </p>
             </div>
           )}
@@ -139,3 +139,4 @@ const SavingsSection = ({ savingsTracker, currencyFormatter, onSetGoal, loading 
 };
 
 export default SavingsSection;
+
