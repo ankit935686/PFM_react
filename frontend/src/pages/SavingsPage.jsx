@@ -4,14 +4,11 @@ import { motion } from 'framer-motion';
 import {
   Bike,
   CalendarDays,
-  CheckCircle2,
   CircleDollarSign,
-  Clock3,
   Edit3,
   GraduationCap,
   House,
   Laptop,
-  Landmark,
   Plane,
   PiggyBank,
   Plus,
@@ -21,7 +18,6 @@ import {
   Target,
   Trash2,
   TrendingUp,
-  Wallet,
 } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { useAuth } from '../context/AuthContext';
@@ -178,13 +174,13 @@ const SavingsPage = () => {
   const overviewCards = useMemo(() => {
     return [
       {
-        title: 'Total Lifetime Savings',
+        title: 'Lifetime Savings',
         value: formatCurrency(summary.totalLifetimeSavings || 0, currency),
         meta: 'All time net savings',
         icon: PiggyBank,
       },
       {
-        title: 'Current Month Savings',
+        title: 'This Month',
         value: formatCurrency(summary.currentMonthSavings || 0, currency),
         meta: selectedPeriodLabel,
         icon: TrendingUp,
@@ -196,22 +192,13 @@ const SavingsPage = () => {
         icon: CircleDollarSign,
       },
       {
-        title: 'Total Active Goals',
+        title: 'Active Goals',
         value: String(summary.totalActiveGoals || 0),
         meta: 'Long-term goals in progress',
         icon: Target,
       },
-      {
-        title: 'MoM Growth',
-        value:
-          summary.monthOverMonthGrowth === null || summary.monthOverMonthGrowth === undefined
-            ? 'N/A'
-            : formatPercent(summary.monthOverMonthGrowth),
-        meta: 'Compared with previous month',
-        icon: Clock3,
-      },
     ];
-  }, [currency, selectedPeriodLabel, summary]);
+  }, [currency, selectedPeriodLabel, summary.currentMonthSavings, summary.savingsRatePercentage, summary.totalActiveGoals, summary.totalLifetimeSavings]);
 
   const trendChartData = useMemo(() => {
     return trend.map((item) => ({
@@ -376,27 +363,32 @@ const SavingsPage = () => {
     <section className="savings-page dashboard-page">
       <header className="savings-hero">
         <div>
-          <p className="savings-eyebrow">Savings Management</p>
-          <h1 className="dashboard-title">Detailed savings workspace</h1>
+          <p className="savings-eyebrow">Savings</p>
+          <h1 className="dashboard-title">Savings management</h1>
           <p className="dashboard-subtitle">
-            Manage monthly savings, long-term goals, progress timelines, and AI recommendations in one place.
+            Manage monthly savings, long-term goals, and progress timelines.
           </p>
         </div>
 
         <div className="savings-hero-actions">
-          <div className="savings-period-pill">
+          <div className="savings-period-pill savings-period-pill--select">
             <CalendarDays size={16} />
             <span>{selectedPeriodLabel}</span>
           </div>
 
-          <button className="savings-action-button" type="button" onClick={loadSavingsDetails} disabled={loading}>
+          <button
+            className="savings-action-button savings-action-button--icon"
+            type="button"
+            onClick={loadSavingsDetails}
+            disabled={loading}
+            aria-label="Refresh savings data"
+          >
             <RefreshCw size={16} />
-            Refresh
           </button>
 
           <button className="savings-action-button savings-action-button--primary" type="button" onClick={openCreateGoal}>
             <Plus size={16} />
-            New Goal
+            New goal
           </button>
         </div>
       </header>
@@ -406,11 +398,17 @@ const SavingsPage = () => {
       <section className="stat-grid savings-overview-grid">
         {loading
           ? Array.from({ length: 5 }).map((_, index) => <div key={`overview-skeleton-${index}`} className="stat-card stat-card--loading" />)
-          : overviewCards.map((card) => {
+          : overviewCards.map((card, index) => {
               const Icon = card.icon;
 
               return (
-                <article key={card.title} className="stat-card savings-overview-card">
+                <motion.article
+                  key={card.title}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.24, delay: 0.04 * index }}
+                  className={`stat-card savings-overview-card savings-stat-card savings-stat-card--${index}`}
+                >
                   <div className="stat-card-head">
                     <p className="stat-card-label">{card.title}</p>
                     <span className="stat-card-icon">
@@ -421,7 +419,7 @@ const SavingsPage = () => {
                   <div className="stat-card-trend">
                     <span>{card.meta}</span>
                   </div>
-                </article>
+                </motion.article>
               );
             })}
       </section>
@@ -483,15 +481,15 @@ const SavingsPage = () => {
 
           <div className="info-card-body">
             <div className="savings-breakdown-metrics">
-              <div className="savings-mini-card">
+              <div className="savings-mini-card savings-mini-card--income">
                 <p>Income</p>
                 <strong>{formatCurrency(breakdown.income || 0, currency)}</strong>
               </div>
-              <div className="savings-mini-card">
+              <div className="savings-mini-card savings-mini-card--expenses">
                 <p>Expenses</p>
                 <strong>{formatCurrency(breakdown.expenses || 0, currency)}</strong>
               </div>
-              <div className="savings-mini-card">
+              <div className="savings-mini-card savings-mini-card--net">
                 <p>Net Savings</p>
                 <strong>{formatCurrency(breakdown.netSavings || 0, currency)}</strong>
               </div>
@@ -531,14 +529,15 @@ const SavingsPage = () => {
       </section>
 
       <section className="savings-goals-section">
-        <div className="transactions-header">
+        <div className="savings-goals-header">
           <div>
-            <h2>Savings Goals</h2>
+            <h2>Savings goals</h2>
             <p className="dashboard-subtitle">Create goals that persist across months and grow with contributions.</p>
           </div>
-          <span className="dashboard-subtitle">
-            {activeGoals.length} active, {completedGoals.length} completed
-          </span>
+          <div className="savings-goals-summary" aria-label="Goals summary">
+            <span className="savings-goals-pill savings-goals-pill--active">{activeGoals.length} active</span>
+            <span className="savings-goals-pill savings-goals-pill--completed">{completedGoals.length} completed</span>
+          </div>
         </div>
 
         <div className="savings-goal-grid">
@@ -657,7 +656,9 @@ const SavingsPage = () => {
                 <div className="savings-timeline-body">
                   <div className="savings-timeline-head">
                     <h3>{item.displayMonth}</h3>
-                    <span>{item.progressStatus}</span>
+                    <span className={`savings-status-badge ${(item.progressStatus || '').toLowerCase()}`}>
+                      {item.progressStatus}
+                    </span>
                   </div>
                   <p>
                     Savings {formatCurrency(item.monthlySavings || 0, currency)}. Income {formatCurrency(item.totalIncome || 0, currency)}. Expenses{' '}
@@ -675,7 +676,7 @@ const SavingsPage = () => {
                   <div className="savings-timeline-body">
                     <div className="savings-timeline-head">
                       <h3>{item.label}</h3>
-                      <span>Goal completed</span>
+                      <span className="savings-status-badge completed">Goal completed</span>
                     </div>
                     <p>{formatCurrency(item.amount || 0, currency)} target reached.</p>
                   </div>
@@ -687,7 +688,7 @@ const SavingsPage = () => {
         <article className="info-card">
           <div className="info-card-header">
             <h2>AI Savings Insights</h2>
-            <span>Groq Llama 3</span>
+            <span>Solo - Limit 1</span>
           </div>
 
           <div className="info-card-body">

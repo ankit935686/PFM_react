@@ -48,7 +48,7 @@ const CalendarPage = () => {
   const outletContext = useOutletContext() || {};
   const [searchParams] = useSearchParams();
 
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
   const selectedMonth = Number(outletContext.selectedMonth || today.getMonth() + 1);
   const selectedYear = Number(outletContext.selectedYear || today.getFullYear());
   const setSelectedMonth = outletContext.setSelectedMonth;
@@ -236,7 +236,9 @@ const CalendarPage = () => {
 
     try {
       const headers = await getAuthHeaders();
-      const remindAtIso = new Date(`${reminderForm.remindDate}T${reminderForm.remindTime}:00`).toISOString();
+      const [year, month, day] = (reminderForm.remindDate || '').split('-').map(Number);
+      const [hours, minutes] = (reminderForm.remindTime || getDefaultReminderTime()).split(':').map(Number);
+      const remindAtIso = new Date(year, (month || 1) - 1, day || 1, hours || 0, minutes || 0, 0).toISOString();
       await api.post(
         '/api/calendar/reminders',
         {

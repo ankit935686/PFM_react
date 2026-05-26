@@ -1293,25 +1293,54 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  --budget-bg: #f7f8fc;
+  --budget-surface: #ffffff;
+  --budget-border: #e7eaf3;
+  --budget-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+  --budget-text: #102a4d;
+  --budget-muted: #6e7c96;
+  --budget-brand: #5b62f0;
+  --budget-success: #10b981;
+  --budget-danger: #f05070;
+  --budget-warn: #f59e0b;
 }
 
 .budget-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 16px;
+}
+
+.budget-header-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.budget-header-icon {
+  height: 46px;
+  width: 46px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #edf0ff, #e8f3ff);
+  color: var(--budget-brand);
+  border: 1px solid var(--budget-border);
 }
 
 .budget-header h1 {
   margin: 0;
-  font-size: 1.4rem;
-  color: var(--color-foreground);
+  font-size: 2.05rem;
+  color: var(--budget-text);
+  letter-spacing: -0.02em;
 }
 
 .budget-header p {
   margin: 6px 0 0;
-  color: var(--color-muted-foreground);
-  font-size: 0.82rem;
+  color: var(--budget-muted);
+  font-size: 0.92rem;
 }
 
 .budget-controls {
@@ -1323,29 +1352,35 @@
 .budget-filter {
   display: inline-flex;
   gap: 8px;
-  border-radius: 12px;
-  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  border: 1px solid var(--budget-border);
   padding: 6px;
-  background: var(--color-card);
+  background: var(--budget-surface);
+  box-shadow: var(--budget-shadow);
 }
 
 .budget-filter select {
   background: transparent;
   border: none;
-  color: var(--color-foreground);
-  font-size: 0.78rem;
+  color: var(--budget-text);
+  font-size: 0.84rem;
+  min-height: 40px;
+  min-width: 110px;
   outline: none;
 }
 
 .budget-add {
-  border: none;
+  border: 1px solid transparent;
   border-radius: 10px;
-  padding: 8px 14px;
-  font-size: 0.78rem;
+  padding: 9px 14px;
+  font-size: 0.84rem;
   font-weight: 600;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--app-brand), var(--app-brand-2));
+  background: linear-gradient(135deg, var(--budget-brand), #767df8);
   color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .budget-overview {
@@ -1355,28 +1390,99 @@
 }
 
 .overview-card {
-  border-radius: 16px;
-  border: 1px solid var(--color-border);
-  background: var(--color-card);
-  padding: 12px;
-  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+  border-radius: 14px;
+  border: 1px solid var(--budget-border);
+  background: var(--budget-surface);
+  padding: 14px;
+  box-shadow: var(--budget-shadow);
+}
+
+.overview-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .overview-card p {
   margin: 0;
-  font-size: 0.72rem;
-  color: var(--color-muted-foreground);
+  font-size: 0.82rem;
+  color: var(--budget-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.overview-card-icon {
+  height: 40px;
+  width: 40px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .overview-card h2 {
-  margin: 8px 0 4px;
-  font-size: 1.1rem;
-  color: var(--color-foreground);
+  margin: 10px 0 4px;
+  font-size: 2.8rem;
+  line-height: 1.1;
+  color: var(--budget-text);
 }
 
 .overview-card span {
-  font-size: 0.68rem;
-  color: var(--color-muted-foreground);
+  font-size: 0.84rem;
+  color: var(--budget-muted);
+}
+
+.overview-card--budget .overview-card-icon {
+  background: #eef0ff;
+  color: var(--budget-brand);
+}
+
+.overview-card--spent .overview-card-icon {
+  background: #feebef;
+  color: var(--budget-danger);
+}
+
+.overview-card--remaining .overview-card-icon {
+  background: #e6f8f2;
+  color: var(--budget-success);
+}
+
+.overview-card--savings .overview-card-icon {
+  background: #efefff;
+  color: var(--budget-brand);
+}
+
+.overview-value-positive {
+  color: #1f8a3b !important;
+}
+
+.overview-value-brand {
+  color: var(--budget-brand) !important;
+}
+
+.overview-card-meter {
+  margin-top: 12px;
+  height: 5px;
+  border-radius: 999px;
+  background: #eceff6;
+  overflow: hidden;
+}
+
+.overview-card-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7d89ff, #6d77f6);
+}
+
+.overview-card--spent .overview-card-meter span {
+  background: linear-gradient(90deg, #ff7f96, #f05070);
+}
+
+.overview-card--remaining .overview-card-meter span {
+  background: linear-gradient(90deg, #32c68a, #11a868);
 }
 
 .budget-analytics {
@@ -1387,9 +1493,10 @@
 
 .budget-chart-card {
   border-radius: 16px;
-  border: 1px solid var(--color-border);
-  background: var(--color-card);
-  padding: 12px;
+  border: 1px solid var(--budget-border);
+  background: var(--budget-surface);
+  padding: 16px;
+  box-shadow: var(--budget-shadow);
 }
 
 .budget-chart-card header {
@@ -1398,61 +1505,209 @@
   justify-content: space-between;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--color-foreground);
+  color: var(--budget-text);
 }
 
 .budget-chart-card span {
-  font-size: 0.68rem;
-  color: var(--color-muted-foreground);
-  border: 1px solid var(--color-border);
+  font-size: 0.74rem;
+  color: var(--budget-text);
+  border: 1px solid var(--budget-border);
+  background: #f8f9ff;
   border-radius: 999px;
-  padding: 3px 6px;
+  padding: 4px 10px;
 }
 
 .budget-chart-body {
-  height: 220px;
+  min-height: 260px;
   margin-top: 8px;
+}
+
+.budget-donut-layout {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.95fr) minmax(0, 1.05fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.budget-donut-wrap {
+  position: relative;
+  height: 220px;
+}
+
+.budget-donut-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.budget-donut-center span {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--budget-muted);
+}
+
+.budget-donut-center strong {
+  font-size: 1.85rem;
+  line-height: 1.1;
+  color: var(--budget-text);
+}
+
+.budget-donut-legend {
+  display: grid;
+  gap: 9px;
+}
+
+.budget-donut-legend-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--budget-border);
+  background: #fcfdff;
+  border-radius: 10px;
+  padding: 7px 9px;
+}
+
+.budget-donut-dot {
+  height: 11px;
+  width: 11px;
+  border-radius: 999px;
+}
+
+.budget-donut-legend-row p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--budget-text);
+}
+
+.budget-donut-legend-row strong {
+  font-size: 0.95rem;
+  color: var(--budget-text);
 }
 
 .budget-insight {
   border-radius: 16px;
-  border: 1px solid var(--color-border);
-  background: var(--color-card);
-  padding: 12px;
+  border: 1px solid var(--budget-border);
+  background: var(--budget-surface);
+  padding: 16px;
   display: grid;
-  gap: 6px;
+  gap: 10px;
+  box-shadow: var(--budget-shadow);
+  position: relative;
+  overflow: hidden;
 }
 
 .budget-insight h3 {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--budget-text);
+  opacity: 0.74;
 }
 
 .budget-insight p {
   margin: 0;
   font-weight: 600;
-  color: var(--color-foreground);
+  color: var(--budget-text);
+  font-size: 1.1rem;
 }
 
 .budget-insight span {
-  font-size: 0.72rem;
-  color: var(--color-muted-foreground);
+  font-size: 0.95rem;
+  color: var(--budget-muted);
+}
+
+.budget-insight-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.budget-insight-icon {
+  height: 56px;
+  width: 56px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.budget-insight-content small {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 4px 12px;
+  display: inline-flex;
+}
+
+.budget-insight-content--danger .budget-insight-icon {
+  background: #ffeef1;
+  color: var(--budget-danger);
+}
+
+.budget-insight-content--danger small {
+  color: #e04666;
+  background: #ffeef1;
+}
+
+.budget-insight-content--safe .budget-insight-icon {
+  background: #e8f8f1;
+  color: var(--budget-success);
+}
+
+.budget-insight-content--safe small {
+  color: #0e9660;
+  background: #e8f8f1;
+}
+
+.budget-insight::after {
+  content: '';
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  bottom: -26px;
+  height: 90px;
+  border-top-left-radius: 50% 50px;
+  border-top-right-radius: 50% 50px;
+  opacity: 0.6;
+}
+
+.budget-insight-content--danger::after,
+.budget-insight-content--safe::after {
+  content: '';
+}
+
+.budget-insight--danger::after {
+  background: radial-gradient(120px 40px at 20% 40%, rgba(240, 80, 112, 0.12), transparent 70%),
+    radial-gradient(140px 50px at 70% 55%, rgba(240, 80, 112, 0.14), transparent 70%);
+}
+
+.budget-insight--safe::after {
+  background: radial-gradient(120px 40px at 20% 40%, rgba(16, 185, 129, 0.12), transparent 70%),
+    radial-gradient(140px 50px at 70% 55%, rgba(16, 185, 129, 0.14), transparent 70%);
 }
 
 .budget-grid {
   display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 .budget-card {
-  border-radius: 16px;
-  border: 1px solid var(--color-border);
-  background: var(--color-card);
-  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--app-border);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--app-surface-elevated) 88%, #111), var(--app-surface));
+  padding: 16px;
   display: grid;
-  gap: 10px;
-  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+  gap: 12px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
 }
 
 .budget-card header {
@@ -1464,119 +1719,153 @@
 
 .budget-card header h3 {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 1.05rem;
 }
 
 .budget-card header p {
-  margin: 4px 0 0;
-  font-size: 0.72rem;
-  color: var(--color-muted-foreground);
+  margin: 3px 0 0;
+  font-size: 0.78rem;
+  color: var(--app-text-muted);
 }
 
 .budget-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
 .budget-actions button {
-  border: 1px solid var(--color-border);
-  background: var(--color-secondary);
-  color: var(--color-foreground);
-  border-radius: 8px;
-  padding: 4px 8px;
-  font-size: 0.68rem;
+  height: 36px;
+  width: 36px;
+  border: 1px solid var(--app-border);
+  background: color-mix(in srgb, var(--app-surface) 94%, #000);
+  color: var(--app-text-muted);
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.budget-actions button:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--app-brand) 45%, var(--app-border));
+  color: var(--app-brand);
 }
 
 .budget-actions button:last-child {
-  border-color: rgba(124, 92, 255, 0.3);
-  color: var(--app-brand);
+  color: var(--app-danger);
 }
 
 .budget-stats {
   display: flex;
   justify-content: space-between;
-  font-size: 0.72rem;
-  color: var(--color-muted-foreground);
+  font-size: 0.92rem;
+  color: var(--app-text-muted);
 }
 
 .budget-stats strong {
-  color: var(--color-foreground);
+  color: var(--app-text);
+  font-size: 1.02rem;
+}
+
+.budget-stats--remaining.budget-stats--safe strong {
+  color: var(--app-success);
+}
+
+.budget-stats--remaining.budget-stats--warn strong {
+  color: var(--app-warning);
+}
+
+.budget-stats--remaining.budget-stats--over strong {
+  color: var(--app-danger);
 }
 
 .budget-progress {
-  display: flex;
-  align-items: center;
+  display: grid;
   gap: 10px;
 }
 
 .budget-progress-bar {
-  flex: 1;
-  height: 6px;
+  width: 100%;
+  height: 7px;
   border-radius: 999px;
-  background: var(--color-muted);
+  background: color-mix(in srgb, var(--app-surface) 88%, #000);
   overflow: hidden;
 }
 
 .budget-progress-bar span {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #22c55e, #16a34a);
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--app-success) 86%, #fff), var(--app-success));
 }
 
 .budget-safe .budget-progress-bar span {
-  background: linear-gradient(90deg, #22c55e, #16a34a);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--app-success) 86%, #fff), var(--app-success));
 }
 
 .budget-warn .budget-progress-bar span {
-  background: linear-gradient(90deg, #f59e0b, #f97316);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--app-warning) 80%, #fff), var(--app-warning));
 }
 
 .budget-over .budget-progress-bar span {
-  background: linear-gradient(90deg, #ef4444, #f97316);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--app-danger) 82%, #fff), var(--app-danger));
 }
 
 .budget-percent {
-  min-width: 72px;
-  text-align: right;
-  font-size: 0.68rem;
-  color: var(--color-muted-foreground);
+  font-size: 0.84rem;
+  color: var(--app-text-muted);
 }
 
-.budget-status {
+.budget-status-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.budget-status-chip {
   margin: 0;
-  font-size: 0.7rem;
-  color: #f59e0b;
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
 }
 
-.budget-over .budget-status {
-  color: #ef4444;
+.budget-status-chip--safe {
+  color: var(--app-success);
+  background: color-mix(in srgb, var(--app-success) 14%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--app-success) 30%, transparent);
+}
+
+.budget-status-chip--warn {
+  color: var(--app-warning);
+  background: color-mix(in srgb, var(--app-warning) 14%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--app-warning) 30%, transparent);
+}
+
+.budget-status-chip--over {
+  color: var(--app-danger);
+  background: color-mix(in srgb, var(--app-danger) 14%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--app-danger) 30%, transparent);
 }
 
 .budget-empty {
   margin: 0;
   font-size: 0.8rem;
-  color: var(--color-muted-foreground);
+  color: var(--app-text-muted);
 }
 
 .savings-page {
-  gap: 20px;
+  gap: 14px;
 }
 
 .savings-hero {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
-  padding: 18px 20px;
-  border-radius: 24px;
-  border: 1px solid var(--app-border);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(243, 237, 255, 0.72));
-  box-shadow: var(--app-shadow-1);
-}
-
-.dark .savings-hero {
-  background: linear-gradient(135deg, rgba(17, 24, 43, 0.96), rgba(20, 28, 50, 0.86));
+  gap: 18px;
+  padding: 6px 2px 10px;
 }
 
 .savings-eyebrow {
@@ -1591,7 +1880,7 @@
 .savings-hero-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
@@ -1601,14 +1890,14 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border-radius: 999px;
+  min-height: 44px;
+  border-radius: 12px;
   border: 1px solid var(--app-border);
-  padding: 9px 14px;
-  background: var(--app-surface-elevated);
+  padding: 10px 14px;
+  background: var(--app-surface);
   color: var(--app-text);
   font-weight: 600;
-  font-size: 0.8rem;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  font-size: 0.84rem;
 }
 
 .savings-action-button {
@@ -1617,9 +1906,9 @@
 }
 
 .savings-action-button:hover {
-  transform: translateY(-1px);
-  border-color: var(--app-brand);
-  box-shadow: 0 12px 28px rgba(124, 92, 255, 0.18);
+  transform: translateY(-1px) scale(1.01);
+  border-color: color-mix(in srgb, var(--app-brand) 55%, var(--app-border));
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
 }
 
 .savings-action-button--primary {
@@ -1637,7 +1926,34 @@
 }
 
 .savings-overview-card {
-  min-height: 130px;
+  min-height: 122px;
+  border-radius: 16px;
+  border: 1px solid var(--app-border);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--app-surface-elevated) 94%, var(--app-surface)),
+    var(--app-surface)
+  );
+}
+
+.savings-stat-card--0 .stat-card-icon {
+  background: color-mix(in srgb, var(--app-brand) 18%, var(--app-surface));
+  color: var(--app-brand);
+}
+
+.savings-stat-card--1 .stat-card-icon {
+  background: color-mix(in srgb, var(--app-brand-2) 18%, var(--app-surface));
+  color: var(--app-brand-2);
+}
+
+.savings-stat-card--2 .stat-card-icon {
+  background: color-mix(in srgb, var(--app-success) 18%, var(--app-surface));
+  color: var(--app-success);
+}
+
+.savings-stat-card--3 .stat-card-icon {
+  background: color-mix(in srgb, var(--app-warning) 16%, var(--app-surface));
+  color: var(--app-warning);
 }
 
 .savings-dual-grid,
@@ -1650,6 +1966,7 @@
 .savings-chart-card,
 .savings-breakdown-card {
   min-height: 360px;
+  border-radius: 16px;
 }
 
 .savings-chart-body {
@@ -1663,14 +1980,10 @@
 }
 
 .savings-mini-card {
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 12px;
   border: 1px solid var(--app-border);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(243, 237, 255, 0.72));
-}
-
-.dark .savings-mini-card {
-  background: linear-gradient(145deg, rgba(18, 25, 45, 0.96), rgba(26, 35, 60, 0.82));
+  background: color-mix(in srgb, var(--app-surface) 96%, #000);
 }
 
 .savings-mini-card p {
@@ -1684,10 +1997,34 @@
   color: var(--app-text);
 }
 
+.savings-mini-card--income {
+  border-color: color-mix(in srgb, var(--app-success) 28%, var(--app-border));
+}
+
+.savings-mini-card--income strong {
+  color: var(--app-success);
+}
+
+.savings-mini-card--expenses {
+  border-color: color-mix(in srgb, var(--app-danger) 28%, var(--app-border));
+}
+
+.savings-mini-card--expenses strong {
+  color: var(--app-danger);
+}
+
+.savings-mini-card--net {
+  border-color: color-mix(in srgb, var(--app-brand) 28%, var(--app-border));
+}
+
+.savings-mini-card--net strong {
+  color: var(--app-brand);
+}
+
 .savings-insight-box {
-  border-radius: 16px;
-  border: 1px solid rgba(124, 92, 255, 0.18);
-  background: rgba(124, 92, 255, 0.08);
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--app-brand) 24%, transparent);
+  background: color-mix(in srgb, var(--app-brand-soft) 70%, var(--app-surface));
   padding: 12px 14px;
 }
 
@@ -1712,6 +2049,49 @@
   gap: 12px;
 }
 
+.savings-goals-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--app-surface) 96%, #000);
+  padding: 14px 16px;
+}
+
+.savings-goals-header h2 {
+  margin: 0 0 4px;
+}
+
+.savings-goals-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.savings-goals-pill {
+  border-radius: 999px;
+  border: 1px solid var(--app-border);
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.savings-goals-pill--active {
+  background: color-mix(in srgb, var(--app-success) 14%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--app-success) 28%, transparent);
+  color: var(--app-success);
+}
+
+.savings-goals-pill--completed {
+  background: color-mix(in srgb, var(--app-brand) 12%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--app-brand) 26%, transparent);
+  color: var(--app-brand);
+}
+
 .savings-goal-grid {
   display: grid;
   gap: 12px;
@@ -1720,18 +2100,22 @@
 
 .goal-card {
   position: relative;
-  border-radius: 20px;
+  border-radius: 14px;
   padding: 16px;
   border: 1px solid var(--app-border);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(243, 237, 255, 0.78));
-  box-shadow: var(--app-shadow-1);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--app-surface-elevated) 88%, #111), var(--app-surface));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
   display: grid;
   gap: 12px;
   overflow: hidden;
 }
 
 .dark .goal-card {
-  background: linear-gradient(145deg, rgba(17, 24, 43, 0.96), rgba(20, 28, 50, 0.9));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--app-surface-elevated) 90%, #000),
+    color-mix(in srgb, var(--app-surface) 90%, #000)
+  );
 }
 
 .goal-card::after {
@@ -1743,12 +2127,17 @@
 }
 
 .goal-card--completed {
-  border-color: rgba(16, 185, 129, 0.26);
+  border-color: color-mix(in srgb, var(--app-success) 34%, transparent);
 }
 
 .goal-card--loading {
   min-height: 260px;
-  background: linear-gradient(110deg, rgba(255, 255, 255, 0.52) 8%, rgba(124, 92, 255, 0.16) 18%, rgba(255, 255, 255, 0.52) 33%);
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--app-surface) 76%, #fff) 8%,
+    color-mix(in srgb, var(--app-brand) 18%, var(--app-surface)) 18%,
+    color-mix(in srgb, var(--app-surface) 76%, #fff) 33%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.6s linear infinite;
 }
@@ -1789,11 +2178,15 @@
 .goal-card-icon {
   height: 36px;
   width: 36px;
-  border-radius: 14px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(124, 92, 255, 0.16), rgba(165, 132, 255, 0.22));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--app-brand) 18%, var(--app-surface)),
+    color-mix(in srgb, var(--app-brand-2) 24%, var(--app-surface))
+  );
   color: var(--app-brand);
   flex-shrink: 0;
 }
@@ -1801,18 +2194,19 @@
 .goal-status {
   padding: 6px 10px;
   border-radius: 999px;
-  background: var(--app-surface-soft);
-  color: var(--app-brand);
+  background: color-mix(in srgb, var(--app-success) 16%, var(--app-surface));
+  color: var(--app-success);
   white-space: nowrap;
+  border: 1px solid color-mix(in srgb, var(--app-success) 30%, transparent);
 }
 
 .goal-status--completed {
-  background: rgba(16, 185, 129, 0.12);
+  background: color-mix(in srgb, var(--app-success) 14%, var(--app-surface));
   color: var(--app-success);
 }
 
 .goal-status--paused {
-  background: rgba(245, 158, 11, 0.12);
+  background: color-mix(in srgb, var(--app-warning) 16%, var(--app-surface));
   color: var(--app-warning);
 }
 
@@ -1834,7 +2228,7 @@
 
 .goal-metric-grid div {
   padding: 10px 12px;
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--app-surface);
   border: 1px solid var(--app-border);
 }
@@ -1856,7 +2250,7 @@
 .goal-notes {
   padding: 12px;
   border-radius: 14px;
-  background: rgba(124, 92, 255, 0.08);
+  background: color-mix(in srgb, var(--app-brand-soft) 56%, var(--app-surface));
 }
 
 .goal-contributions {
@@ -1870,7 +2264,7 @@
   gap: 10px;
   align-items: center;
   padding: 8px 10px;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--app-border);
   background: var(--app-surface);
 }
@@ -1884,11 +2278,12 @@
 .goal-card-actions .savings-action-button {
   flex: 1 1 110px;
   justify-content: center;
+  border-radius: 12px;
 }
 
 .savings-timeline {
   display: grid;
-  gap: 12px;
+  gap: 0;
   margin-top: 14px;
 }
 
@@ -1896,27 +2291,32 @@
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.savings-timeline-item:last-child {
+  border-bottom: 0;
 }
 
 .savings-timeline-dot {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border-radius: 999px;
-  margin-top: 6px;
-  background: linear-gradient(135deg, var(--app-brand), var(--app-brand-2));
-  box-shadow: 0 0 0 6px rgba(124, 92, 255, 0.1);
+  margin-top: 8px;
+  background: var(--app-brand);
+  box-shadow: none;
 }
 
 .savings-timeline-dot--goal {
-  background: linear-gradient(135deg, var(--app-success), #34d399);
-  box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.1);
+  background: var(--app-success);
 }
 
 .savings-timeline-body {
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: var(--app-surface);
-  border: 1px solid var(--app-border);
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
 }
 
 .savings-timeline-head {
@@ -1932,8 +2332,31 @@
 }
 
 .savings-timeline-head span {
-  font-size: 0.68rem;
-  color: var(--app-brand);
+  font-size: 0.72rem;
+}
+
+.savings-status-badge {
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: color-mix(in srgb, var(--app-success) 16%, var(--app-surface));
+  color: var(--app-success);
+  border: 1px solid color-mix(in srgb, var(--app-success) 30%, transparent);
+  font-weight: 600;
+}
+
+.savings-status-badge.completed {
+  background: color-mix(in srgb, var(--app-success) 15%, var(--app-surface));
+  color: var(--app-success);
+  border-color: color-mix(in srgb, var(--app-success) 30%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .savings-action-button,
+  .goal-card,
+  .savings-overview-card {
+    transition: none !important;
+    animation: none !important;
+  }
 }
 
 .savings-timeline-body p {
@@ -2035,6 +2458,11 @@
   .savings-modal-actions,
   .goal-card-actions {
     width: 100%;
+  }
+
+  .savings-goals-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .savings-form-grid,
@@ -2142,6 +2570,14 @@
   .budget-analytics {
     grid-template-columns: 1fr;
   }
+
+  .budget-donut-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .budget-donut-wrap {
+    height: 200px;
+  }
 }
 
 @media (max-width: 720px) {
@@ -2202,6 +2638,7 @@
 
 .calendar-premium {
   --cal-surface: var(--app-surface-elevated);
+  --cal-surface-soft: color-mix(in srgb, var(--app-surface-elevated) 92%, var(--app-surface));
   --cal-border: var(--app-border);
   --cal-muted: var(--app-text-muted);
 }
@@ -2211,19 +2648,20 @@
   gap: 12px;
   grid-template-columns: 1.4fr 1fr;
   border: 1px solid var(--cal-border);
-  border-radius: 22px;
+  border-radius: 16px;
   padding: 18px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(236, 228, 255, 0.8));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cal-surface) 94%, var(--app-surface)), var(--app-surface));
   box-shadow: var(--app-shadow-1);
 }
 
 .dark .cal-header {
-  background: linear-gradient(145deg, rgba(18, 25, 45, 0.96), rgba(30, 21, 55, 0.9));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cal-surface) 92%, #000), color-mix(in srgb, var(--app-surface) 90%, #000));
 }
 
 .cal-header h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.55rem;
+  color: var(--app-text);
 }
 
 .cal-header p {
@@ -2250,9 +2688,9 @@
 }
 
 .cal-pill.is-active {
-  background: linear-gradient(135deg, var(--app-brand), var(--app-brand-2));
-  color: #fff;
-  border-color: transparent;
+  background: color-mix(in srgb, var(--app-brand) 16%, var(--app-surface));
+  color: var(--app-brand);
+  border-color: color-mix(in srgb, var(--app-brand) 32%, transparent);
 }
 
 .cal-stat-strip {
@@ -2266,7 +2704,7 @@
   border-radius: 12px;
   border: 1px solid var(--cal-border);
   padding: 8px;
-  background: var(--app-surface);
+  background: var(--cal-surface-soft);
   color: var(--cal-muted);
   font-size: 0.74rem;
 }
@@ -2287,9 +2725,9 @@
 .cal-board,
 .cal-reminder-panel,
 .cal-details {
-  border-radius: 20px;
+  border-radius: 16px;
   border: 1px solid var(--cal-border);
-  background: var(--cal-surface);
+  background: var(--cal-surface-soft);
   box-shadow: var(--app-shadow-1);
 }
 
@@ -2328,6 +2766,7 @@
   color: var(--app-text);
   border-radius: 10px;
   padding: 7px 10px;
+  min-height: 40px;
 }
 
 .cal-today-btn {
@@ -2360,9 +2799,9 @@
 
 .cal-day-card {
   min-height: 110px;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid var(--cal-border);
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.72), rgba(240, 231, 255, 0.52));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--app-surface) 94%, #000), var(--app-surface));
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -2372,23 +2811,23 @@
 }
 
 .dark .cal-day-card {
-  background: linear-gradient(160deg, rgba(15, 20, 35, 0.92), rgba(33, 22, 56, 0.7));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--app-surface-elevated) 88%, #000), color-mix(in srgb, var(--app-surface) 90%, #000));
 }
 
 .cal-day-card:hover {
   transform: translateY(-1px);
   border-color: var(--app-brand);
-  box-shadow: 0 14px 26px rgba(124, 92, 255, 0.2);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
 }
 
 .cal-day-card.is-selected {
-  border-color: #67e8f9;
-  box-shadow: 0 0 0 2px rgba(103, 232, 249, 0.2);
+  border-color: var(--app-brand);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-brand) 28%, transparent);
 }
 
 .cal-day-card.is-today {
-  border-color: #a78bfa;
-  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.22), 0 12px 24px rgba(124, 92, 255, 0.18);
+  border-color: var(--app-brand-2);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-brand-2) 26%, transparent), 0 10px 20px rgba(0, 0, 0, 0.18);
 }
 
 .cal-day-head {
@@ -2405,9 +2844,9 @@
 .cal-today-tag {
   font-size: 0.58rem;
   border-radius: 999px;
-  background: rgba(124, 92, 255, 0.16);
+  background: color-mix(in srgb, var(--app-brand) 16%, var(--app-surface));
   color: var(--app-brand);
-  border: 1px solid rgba(124, 92, 255, 0.3);
+  border: 1px solid color-mix(in srgb, var(--app-brand) 30%, transparent);
   padding: 2px 6px;
 }
 
@@ -2426,11 +2865,11 @@
   border: 1px solid transparent;
 }
 
-.cal-event-expense { background: rgba(239, 68, 68, 0.12); color: #fda4af; border-color: rgba(239, 68, 68, 0.24); }
-.cal-event-income { background: rgba(16, 185, 129, 0.12); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.22); }
-.cal-event-reminder { background: rgba(59, 130, 246, 0.12); color: #93c5fd; border-color: rgba(59, 130, 246, 0.22); }
-.cal-event-goal { background: rgba(167, 139, 250, 0.14); color: #c4b5fd; border-color: rgba(167, 139, 250, 0.24); }
-.cal-event-more { background: rgba(148, 163, 184, 0.12); color: #cbd5e1; border-color: rgba(148, 163, 184, 0.22); }
+.cal-event-expense { background: color-mix(in srgb, var(--app-danger) 14%, var(--app-surface)); color: var(--app-danger); border-color: color-mix(in srgb, var(--app-danger) 26%, transparent); }
+.cal-event-income { background: color-mix(in srgb, var(--app-success) 14%, var(--app-surface)); color: var(--app-success); border-color: color-mix(in srgb, var(--app-success) 26%, transparent); }
+.cal-event-reminder { background: color-mix(in srgb, var(--app-brand-2) 14%, var(--app-surface)); color: var(--app-brand-2); border-color: color-mix(in srgb, var(--app-brand-2) 24%, transparent); }
+.cal-event-goal { background: color-mix(in srgb, var(--app-brand) 14%, var(--app-surface)); color: var(--app-brand); border-color: color-mix(in srgb, var(--app-brand) 24%, transparent); }
+.cal-event-more { background: color-mix(in srgb, var(--app-text-muted) 14%, var(--app-surface)); color: var(--app-text-muted); border-color: color-mix(in srgb, var(--app-text-muted) 22%, transparent); }
 
 .cal-day-footer small {
   font-size: 0.62rem;
@@ -2486,6 +2925,7 @@
   padding: 9px 11px;
   font-size: 0.78rem;
   outline: none;
+  min-height: 42px;
 }
 
 .cal-input:focus {
@@ -2493,9 +2933,21 @@
   box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.15);
 }
 
+.cal-input[type='date'],
+.cal-input[type='time'] {
+  cursor: pointer;
+  color-scheme: dark;
+}
+
+.cal-input[type='date']::-webkit-calendar-picker-indicator,
+.cal-input[type='time']::-webkit-calendar-picker-indicator {
+  opacity: 0.85;
+  cursor: pointer;
+}
+
 .cal-primary-btn {
   width: 100%;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 12px;
   padding: 9px 12px;
   font-size: 0.79rem;
@@ -2541,9 +2993,9 @@
 }
 
 .cal-tab.is-active {
-  background: linear-gradient(135deg, rgba(124, 92, 255, 0.2), rgba(167, 139, 250, 0.16));
-  border-color: rgba(124, 92, 255, 0.4);
-  color: #e9d5ff;
+  background: color-mix(in srgb, var(--app-brand) 16%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--app-brand) 32%, transparent);
+  color: var(--app-brand);
 }
 
 .cal-details-body {
@@ -2560,7 +3012,7 @@
   border: 1px solid var(--cal-border);
   border-radius: 14px;
   padding: 10px;
-  background: var(--app-surface);
+  background: color-mix(in srgb, var(--app-surface) 96%, #000);
 }
 
 .cal-data-card header {
@@ -2594,16 +3046,16 @@
 
 .cal-mini-btn {
   border: 1px solid var(--cal-border);
-  border-radius: 8px;
-  background: transparent;
+  border-radius: 10px;
+  background: var(--app-surface);
   color: var(--app-text);
-  padding: 4px 8px;
-  font-size: 0.66rem;
+  padding: 6px 9px;
+  font-size: 0.68rem;
 }
 
 .cal-mini-btn.danger {
-  border-color: rgba(244, 63, 94, 0.4);
-  color: #fda4af;
+  border-color: color-mix(in srgb, var(--app-danger) 34%, transparent);
+  color: var(--app-danger);
 }
 
 .cal-status-chip {
@@ -2613,11 +3065,11 @@
   border: 1px solid transparent;
 }
 
-.cal-status-today { background: rgba(59, 130, 246, 0.12); color: #93c5fd; border-color: rgba(59, 130, 246, 0.3); }
-.cal-status-upcoming { background: rgba(167, 139, 250, 0.16); color: #c4b5fd; border-color: rgba(167, 139, 250, 0.3); }
-.cal-status-overdue { background: rgba(239, 68, 68, 0.12); color: #fca5a5; border-color: rgba(239, 68, 68, 0.3); }
-.cal-status-completed { background: rgba(16, 185, 129, 0.12); color: #86efac; border-color: rgba(16, 185, 129, 0.3); }
-.cal-status-scheduled { background: rgba(148, 163, 184, 0.12); color: #cbd5e1; border-color: rgba(148, 163, 184, 0.3); }
+.cal-status-today { background: color-mix(in srgb, var(--app-brand-2) 14%, var(--app-surface)); color: var(--app-brand-2); border-color: color-mix(in srgb, var(--app-brand-2) 28%, transparent); }
+.cal-status-upcoming { background: color-mix(in srgb, var(--app-brand) 14%, var(--app-surface)); color: var(--app-brand); border-color: color-mix(in srgb, var(--app-brand) 28%, transparent); }
+.cal-status-overdue { background: color-mix(in srgb, var(--app-danger) 14%, var(--app-surface)); color: var(--app-danger); border-color: color-mix(in srgb, var(--app-danger) 28%, transparent); }
+.cal-status-completed { background: color-mix(in srgb, var(--app-success) 14%, var(--app-surface)); color: var(--app-success); border-color: color-mix(in srgb, var(--app-success) 28%, transparent); }
+.cal-status-scheduled { background: color-mix(in srgb, var(--app-text-muted) 14%, var(--app-surface)); color: var(--app-text-muted); border-color: color-mix(in srgb, var(--app-text-muted) 28%, transparent); }
 
 .cal-empty {
   border: 1px dashed var(--cal-border);

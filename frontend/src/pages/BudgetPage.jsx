@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
-import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '../components/ui/chart';
+import { Flame, Leaf, NotebookPen, Pencil, Plus, Star, Trash2, TrendingUp, Wallet } from 'lucide-react';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../components/ui/chart';
 import { useAuth } from '../context/AuthContext';
 import { useBudgets } from '../context/BudgetContext';
 import { useExpenses } from '../context/ExpenseContext';
@@ -32,6 +33,16 @@ const monthOptions = [
   { value: 11, label: 'November' },
   { value: 12, label: 'December' },
 ];
+
+const getBudgetStatusLabel = (status) => {
+  if (status === 'over') {
+    return 'Over budget';
+  }
+  if (status === 'warn') {
+    return 'Warning';
+  }
+  return 'On track';
+};
 
 const BudgetPage = () => {
   const { currentUser } = useAuth();
@@ -184,24 +195,36 @@ const BudgetPage = () => {
     return budgetCards.reduce((lowest, item) => (item.percent < lowest.percent ? item : lowest), budgetCards[0]);
   }, [budgetCards]);
 
-  const chartConfig = {
-    safe: { label: 'Safe', color: '#16a34a' },
-    warn: { label: 'Warning', color: '#f59e0b' },
-    over: { label: 'Over Budget', color: '#ef4444' },
-  };
+  const piePalette = ['#ef4444', '#f59e0b', '#3b82f6', '#22c55e', '#8b5cf6', '#06b6d4'];
 
-  const chartData = budgetCards.map((item) => ({
-    name: item.category,
-    value: item.percent,
-    status: item.status,
-  }));
+  const chartData = useMemo(() => {
+    const entries = Object.entries(expenseByCategory || {})
+      .map(([name, value]) => ({ name, value: Number(value || 0) }))
+      .filter((item) => item.value > 0)
+      .sort((a, b) => b.value - a.value);
+
+    return entries.map((item, index) => ({ ...item, color: piePalette[index % piePalette.length] }));
+  }, [expenseByCategory]);
+
+  const chartTotal = useMemo(() => chartData.reduce((sum, item) => sum + item.value, 0), [chartData]);
+  const chartConfig = useMemo(
+    () =>
+      chartData.reduce((acc, item) => {
+        acc[item.name] = { label: item.name, color: item.color };
+        return acc;
+      }, {}),
+    [chartData]
+  );
 
   return (
     <section className="budget-page">
       <header className="budget-header">
-        <div>
+        <div className="budget-header-title">
+          <span className="budget-header-icon"><Wallet size={18} /></span>
+          <div>
           <h1>Budget Management</h1>
           <p>Plan monthly budgets, track spending, and stay in control.</p>
+          </div>
         </div>
 
         <div className="budget-controls">
@@ -227,6 +250,10 @@ const BudgetPage = () => {
               ))}
             </select>
           </div>
+          <button className="budget-add" type="button" onClick={() => handleOpenModal()}>
+            <Plus size={16} />
+            Add budget
+          </button>
         </div>
       </header>
 
@@ -235,32 +262,42 @@ const BudgetPage = () => {
         animate={{ opacity: 1, y: 0 }}
         className="space-y-6"
       >
-        <div className="flex justify-end mb-4">
-          <button className="budget-add" type="button" onClick={() => handleOpenModal()}>
-            Add Budget
-          </button>
-        </div>
-
         <section className="budget-overview">
-          <article className="overview-card">
-            <p>Total Budget</p>
+          <article className="overview-card overview-card--budget">
+            <div className="overview-card-head">
+              <p>Total Budget</p>
+              <span className="overview-card-icon"><Wallet size={15} /></span>
+            </div>
             <h2>{currencyFormatter(totals.totalBudget)}</h2>
             <span>Allocated for the month</span>
+            <div className="overview-card-meter"><span style={{ width: '62%' }} /></div>
           </article>
-          <article className="overview-card">
-            <p>Total Spent</p>
+          <article className="overview-card overview-card--spent">
+            <div className="overview-card-head">
+              <p>Total Spent</p>
+              <span className="overview-card-icon"><NotebookPen size={15} /></span>
+            </div>
             <h2>{currencyFormatter(totals.totalSpent)}</h2>
             <span>Tracked expenses</span>
+            <div className="overview-card-meter"><span style={{ width: '48%' }} /></div>
           </article>
-          <article className="overview-card">
-            <p>Remaining</p>
-            <h2>{currencyFormatter(totals.remaining)}</h2>
+          <article className="overview-card overview-card--remaining">
+            <div className="overview-card-head">
+              <p>Remaining</p>
+              <span className="overview-card-icon"><TrendingUp size={15} /></span>
+            </div>
+            <h2 className="overview-value-positive">{currencyFormatter(totals.remaining)}</h2>
             <span>Available balance</span>
+            <div className="overview-card-meter"><span style={{ width: '73%' }} /></div>
           </article>
-          <article className="overview-card">
-            <p>Savings Estimate</p>
-            <h2>{currencyFormatter(totals.savingsEstimate)}</h2>
+          <article className="overview-card overview-card--savings">
+            <div className="overview-card-head">
+              <p>Savings Estimate</p>
+              <span className="overview-card-icon"><Star size={15} /></span>
+            </div>
+            <h2 className="overview-value-brand">{currencyFormatter(totals.savingsEstimate)}</h2>
             <span>Projected savings</span>
+            <div className="overview-card-meter"><span style={{ width: '68%' }} /></div>
           </article>
         </section>
 
@@ -273,20 +310,36 @@ const BudgetPage = () => {
             <div className="budget-chart-body">
               {chartData.length ? (
                 <ChartContainer config={chartConfig} className="chart-container">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={52} outerRadius={80}>
-                        {chartData.map((entry) => (
-                          <Cell
-                            key={entry.name}
-                            fill={chartConfig[entry.status]?.color || '#f97316'}
-                          />
-                        ))}
-                      </Pie>
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <ChartLegend content={<ChartLegendContent />} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <div className="budget-donut-layout">
+                    <div className="budget-donut-wrap">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={52} outerRadius={80} stroke="none">
+                            {chartData.map((entry) => (
+                              <Cell
+                                key={entry.name}
+                                fill={entry.color}
+                              />
+                            ))}
+                          </Pie>
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="budget-donut-center">
+                        <span>Total</span>
+                        <strong>{currencyFormatter(chartTotal)}</strong>
+                      </div>
+                    </div>
+                    <div className="budget-donut-legend">
+                      {chartData.map((item) => (
+                        <div key={item.name} className="budget-donut-legend-row">
+                          <span className="budget-donut-dot" style={{ background: item.color }} />
+                          <p>{item.name}</p>
+                          <strong>{currencyFormatter(item.value)}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </ChartContainer>
               ) : (
                 <p className="budget-empty">Add budgets to see category usage.</p>
@@ -294,24 +347,32 @@ const BudgetPage = () => {
             </div>
           </article>
 
-          <article className="budget-insight">
+          <article className="budget-insight budget-insight--danger">
             <h3>Highest Spending</h3>
             {highestSpending ? (
-              <div>
-                <p>{highestSpending.category}</p>
-                <span>{currencyFormatter(highestSpending.spent)} spent</span>
+              <div className="budget-insight-content budget-insight-content--danger">
+                <span className="budget-insight-icon"><Flame size={20} /></span>
+                <div>
+                  <p>{highestSpending.category}</p>
+                  <span>{currencyFormatter(highestSpending.spent)} spent</span>
+                  <small>Highest spend this month</small>
+                </div>
               </div>
             ) : (
               <p className="budget-empty">No spending recorded yet.</p>
             )}
           </article>
 
-          <article className="budget-insight">
+          <article className="budget-insight budget-insight--safe">
             <h3>Most Underused</h3>
             {mostUnderused ? (
-              <div>
-                <p>{mostUnderused.category}</p>
-                <span>{mostUnderused.percent}% used</span>
+              <div className="budget-insight-content budget-insight-content--safe">
+                <span className="budget-insight-icon"><Leaf size={20} /></span>
+                <div>
+                  <p>{mostUnderused.category}</p>
+                  <span>{mostUnderused.percent}% used</span>
+                  <small>Underutilized - consider reallocating</small>
+                </div>
               </div>
             ) : (
               <p className="budget-empty">No budgets available.</p>
@@ -329,11 +390,11 @@ const BudgetPage = () => {
                     <p>{currencyFormatter(budget.amount)} allocated</p>
                   </div>
                   <div className="budget-actions">
-                    <button type="button" onClick={() => handleOpenModal(budget)}>
-                      Edit
+                    <button type="button" onClick={() => handleOpenModal(budget)} aria-label={`Edit ${budget.category} budget`}>
+                      <Pencil size={14} />
                     </button>
-                    <button type="button" onClick={() => deleteBudget(budget.id)}>
-                      Delete
+                    <button type="button" onClick={() => deleteBudget(budget.id)} aria-label={`Delete ${budget.category} budget`}>
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </header>
@@ -342,7 +403,7 @@ const BudgetPage = () => {
                   <p>Spent</p>
                   <strong>{currencyFormatter(budget.spent)}</strong>
                 </div>
-                <div className="budget-stats">
+                <div className={`budget-stats budget-stats--remaining budget-stats--${budget.status}`}>
                   <p>Remaining</p>
                   <strong>{currencyFormatter(budget.remaining)}</strong>
                 </div>
@@ -354,8 +415,9 @@ const BudgetPage = () => {
                   <span className="budget-percent">{budget.percent}% used</span>
                 </div>
 
-                {budget.status === 'warn' && <p className="budget-status">Warning: 80% used</p>}
-                {budget.status === 'over' && <p className="budget-status">Over Budget</p>}
+                <div className="budget-status-row">
+                  <span className={`budget-status-chip budget-status-chip--${budget.status}`}>{getBudgetStatusLabel(budget.status)}</span>
+                </div>
               </article>
             ))
           ) : (
