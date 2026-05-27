@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useSavings } from '../../context/SavingsContext';
 
-const SavingsGoalModal = ({ isOpen, onClose, currentGoal, currencyFormatter, targetMonth, targetYear }) => {
+const SavingsGoalModal = ({ isOpen, onClose, onGoalSet, currentGoal, currencyFormatter, targetMonth, targetYear }) => {
   const { setSavingsGoal, saving } = useSavings();
   const [goalAmount, setGoalAmount] = useState(currentGoal?.goalAmount || '');
   const [notes, setNotes] = useState(currentGoal?.notes || '');
@@ -32,7 +32,10 @@ const SavingsGoalModal = ({ isOpen, onClose, currentGoal, currencyFormatter, tar
       const resolvedMonth = targetMonth || new Date().getMonth() + 1;
       const resolvedYear = targetYear || new Date().getFullYear();
 
-      await setSavingsGoal(Number(goalAmount), resolvedMonth, resolvedYear, notes);
+      const savedGoal = await setSavingsGoal(Number(goalAmount), resolvedMonth, resolvedYear, notes);
+      if (onGoalSet) {
+        await onGoalSet(savedGoal);
+      }
       onClose();
       setGoalAmount('');
       setNotes('');

@@ -11,6 +11,7 @@ import ProfileSetupPage from './pages/ProfileSetupPage'
 import BudgetPage from './pages/BudgetPage'
 import SavingsPage from './pages/SavingsPage'
 import AnalyticsPage from './pages/AnalyticsPage'
+import CopilotPage from './pages/CopilotPage'
 import SettingsPage from './pages/SettingsPage'
 import CalendarPage from './pages/CalendarPage'
 import GroupsPage from './pages/GroupsPage'
@@ -50,6 +51,7 @@ function App() {
         <Route path="/savings" element={<SavingsPage />} />
         <Route path="/goals" element={<Navigate to="/savings" replace />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/copilot" element={<CopilotPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/groups" element={<GroupsPage />} />
         <Route path="/groups/:groupId" element={<GroupDetailsPage />} />

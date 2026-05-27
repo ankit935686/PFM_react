@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ArrowLeftRight, Wallet, PiggyBank, ChartNoAxesCombined, Settings, CalendarDays, Users, CircleDollarSign } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, Wallet, PiggyBank, ChartNoAxesCombined, Settings, CalendarDays, Users, CircleDollarSign, Bot } from 'lucide-react';
 
 const navSections = [
   {
@@ -18,6 +18,7 @@ const navSections = [
   {
     label: 'Analytics',
     items: [
+      { to: '/copilot', label: 'AI Copilot', icon: Bot },
       { to: '/analytics', label: 'Analytics', icon: ChartNoAxesCombined },
       { to: '/calendar', label: 'Calendar', icon: CalendarDays },
     ],

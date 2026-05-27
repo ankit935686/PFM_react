@@ -13,6 +13,7 @@ const transactionRoutes = require('./routes/transactionRoutes');
 const receiptRoutes = require('./routes/receiptRoutes');
 const calendarRoutes = require('./routes/calendarRoutes');
 const groupRoutes = require('./routes/groupRoutes');
+const aiCopilotRoutes = require('./routes/aiCopilotRoutes');
 
 const app = express();
 
@@ -34,6 +35,8 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/receipts', receiptRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/groups', groupRoutes);
+app.use('/api/copilot', aiCopilotRoutes);
+app.use('/api/ai', aiCopilotRoutes);
 
 app.use((req, res) => {
 	res.status(404).json({

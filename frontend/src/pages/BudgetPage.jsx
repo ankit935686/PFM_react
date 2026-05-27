@@ -195,7 +195,7 @@ const BudgetPage = () => {
     return budgetCards.reduce((lowest, item) => (item.percent < lowest.percent ? item : lowest), budgetCards[0]);
   }, [budgetCards]);
 
-  const piePalette = ['#ef4444', '#f59e0b', '#3b82f6', '#22c55e', '#8b5cf6', '#06b6d4'];
+  const piePalette = ['#6EC6E6', '#A78BFA', '#F472B6', '#FB923C', '#34D399', '#F59E0B'];
 
   const chartData = useMemo(() => {
     const entries = Object.entries(expenseByCategory || {})
@@ -314,7 +314,15 @@ const BudgetPage = () => {
                     <div className="budget-donut-wrap">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
-                          <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={52} outerRadius={80} stroke="none">
+                          <Pie
+                            data={chartData}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius={60}
+                            outerRadius={92}
+                            paddingAngle={2}
+                            stroke="none"
+                          >
                             {chartData.map((entry) => (
                               <Cell
                                 key={entry.name}
@@ -326,7 +334,7 @@ const BudgetPage = () => {
                         </PieChart>
                       </ResponsiveContainer>
                       <div className="budget-donut-center">
-                        <span>Total</span>
+                        <span>Total spending</span>
                         <strong>{currencyFormatter(chartTotal)}</strong>
                       </div>
                     </div>
@@ -347,37 +355,39 @@ const BudgetPage = () => {
             </div>
           </article>
 
-          <article className="budget-insight budget-insight--danger">
-            <h3>Highest Spending</h3>
-            {highestSpending ? (
-              <div className="budget-insight-content budget-insight-content--danger">
-                <span className="budget-insight-icon"><Flame size={20} /></span>
-                <div>
-                  <p>{highestSpending.category}</p>
-                  <span>{currencyFormatter(highestSpending.spent)} spent</span>
-                  <small>Highest spend this month</small>
+          <div className="budget-analytics-stack">
+            <article className="budget-insight budget-insight--danger">
+              <h3>Highest Spending</h3>
+              {highestSpending ? (
+                <div className="budget-insight-content budget-insight-content--danger">
+                  <span className="budget-insight-icon"><Flame size={20} /></span>
+                  <div>
+                    <p>{highestSpending.category}</p>
+                    <span>{currencyFormatter(highestSpending.spent)} spent</span>
+                    <small>Highest spend this month</small>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <p className="budget-empty">No spending recorded yet.</p>
-            )}
-          </article>
+              ) : (
+                <p className="budget-empty">No spending recorded yet.</p>
+              )}
+            </article>
 
-          <article className="budget-insight budget-insight--safe">
-            <h3>Most Underused</h3>
-            {mostUnderused ? (
-              <div className="budget-insight-content budget-insight-content--safe">
-                <span className="budget-insight-icon"><Leaf size={20} /></span>
-                <div>
-                  <p>{mostUnderused.category}</p>
-                  <span>{mostUnderused.percent}% used</span>
-                  <small>Underutilized - consider reallocating</small>
+            <article className="budget-insight budget-insight--safe">
+              <h3>Most Underused</h3>
+              {mostUnderused ? (
+                <div className="budget-insight-content budget-insight-content--safe">
+                  <span className="budget-insight-icon"><Leaf size={20} /></span>
+                  <div>
+                    <p>{mostUnderused.category}</p>
+                    <span>{mostUnderused.percent}% used</span>
+                    <small>Underutilized - consider reallocating</small>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <p className="budget-empty">No budgets available.</p>
-            )}
-          </article>
+              ) : (
+                <p className="budget-empty">No budgets available.</p>
+              )}
+            </article>
+          </div>
         </section>
 
         <section className="budget-grid">

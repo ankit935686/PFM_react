@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
@@ -416,84 +416,84 @@ const DashboardPage = () => {
     }
   }, [currentUser?.uid]);
 
+  const loadDashboardData = useCallback(async () => {
+    if (!currentUser?.uid) {
+      setSummaryLoading(false);
+      setAnalyticsLoading(false);
+      setSelectedSavingsTracker(null);
+      setComparison(null);
+      setSummary({
+        totalBalance: 0,
+        monthlyIncome: 0,
+        monthlyExpenses: 0,
+        totalSavings: 0,
+        cumulativeBalance: 0,
+      });
+      setExpenseCategoryData([]);
+      setMonthlyExpenseData([]);
+      setIncomeExpenseTrendData([]);
+      return;
+    }
+
+    setSummaryLoading(true);
+    setAnalyticsLoading(true);
+    setError('');
+
+    try {
+      const headers = await getAuthHeaders();
+      const query = `month=${selectedMonth}&year=${selectedYear}`;
+
+      const [summaryResponse, categoriesResponse, monthlyResponse, trendResponse] = await Promise.all([
+        api.get(`/api/dashboard/summary?${query}`, { headers }),
+        api.get(`/api/dashboard/analytics/expense-categories?${query}`, { headers }),
+        api.get(`/api/dashboard/analytics/monthly-expenses?${query}&months=6`, { headers }),
+        api.get(`/api/dashboard/analytics/income-expense-trend?${query}&months=6`, { headers }),
+      ]);
+
+      const nextSummary = summaryResponse.data?.summary || {};
+
+      setSummary({
+        totalBalance: Number(nextSummary.totalBalance || 0),
+        monthlyIncome: Number(nextSummary.monthlyIncome || 0),
+        monthlyExpenses: Number(nextSummary.monthlyExpenses || 0),
+        totalSavings: Number(nextSummary.totalSavings || 0),
+        cumulativeBalance: Number(nextSummary.cumulativeBalance || 0),
+      });
+      setSelectedSavingsTracker(summaryResponse.data?.savings || null);
+      setComparison(summaryResponse.data?.comparison || null);
+
+      const categories = (categoriesResponse.data?.categories || []).map((item, index) => ({
+        category: item.category,
+        total: Number(item.total || 0),
+        color: chartPalette[index % chartPalette.length],
+      }));
+
+      setExpenseCategoryData(categories);
+      setMonthlyExpenseData(monthlyResponse.data?.monthlyExpenses || []);
+      setIncomeExpenseTrendData(trendResponse.data?.trend || []);
+    } catch (dashboardError) {
+      setError(dashboardError.response?.data?.message || 'Failed to load dashboard data.');
+      setSelectedSavingsTracker(null);
+      setComparison(null);
+      setSummary({
+        totalBalance: 0,
+        monthlyIncome: 0,
+        monthlyExpenses: 0,
+        totalSavings: 0,
+        cumulativeBalance: 0,
+      });
+      setExpenseCategoryData([]);
+      setMonthlyExpenseData([]);
+      setIncomeExpenseTrendData([]);
+    } finally {
+      setSummaryLoading(false);
+      setAnalyticsLoading(false);
+    }
+  }, [currentUser, expenses, income, selectedMonth, selectedYear]);
+
   useEffect(() => {
-    const loadDashboardData = async () => {
-      if (!currentUser?.uid) {
-        setSummaryLoading(false);
-        setAnalyticsLoading(false);
-        setSelectedSavingsTracker(null);
-        setComparison(null);
-        setSummary({
-          totalBalance: 0,
-          monthlyIncome: 0,
-          monthlyExpenses: 0,
-          totalSavings: 0,
-          cumulativeBalance: 0,
-        });
-        setExpenseCategoryData([]);
-        setMonthlyExpenseData([]);
-        setIncomeExpenseTrendData([]);
-        return;
-      }
-
-      setSummaryLoading(true);
-      setAnalyticsLoading(true);
-      setError('');
-
-      try {
-        const headers = await getAuthHeaders();
-        const query = `month=${selectedMonth}&year=${selectedYear}`;
-
-        const [summaryResponse, categoriesResponse, monthlyResponse, trendResponse] = await Promise.all([
-          api.get(`/api/dashboard/summary?${query}`, { headers }),
-          api.get(`/api/dashboard/analytics/expense-categories?${query}`, { headers }),
-          api.get(`/api/dashboard/analytics/monthly-expenses?${query}&months=6`, { headers }),
-          api.get(`/api/dashboard/analytics/income-expense-trend?${query}&months=6`, { headers }),
-        ]);
-
-        const nextSummary = summaryResponse.data?.summary || {};
-
-        setSummary({
-          totalBalance: Number(nextSummary.totalBalance || 0),
-          monthlyIncome: Number(nextSummary.monthlyIncome || 0),
-          monthlyExpenses: Number(nextSummary.monthlyExpenses || 0),
-          totalSavings: Number(nextSummary.totalSavings || 0),
-          cumulativeBalance: Number(nextSummary.cumulativeBalance || 0),
-        });
-        setSelectedSavingsTracker(summaryResponse.data?.savings || null);
-        setComparison(summaryResponse.data?.comparison || null);
-
-        const categories = (categoriesResponse.data?.categories || []).map((item, index) => ({
-          category: item.category,
-          total: Number(item.total || 0),
-          color: chartPalette[index % chartPalette.length],
-        }));
-
-        setExpenseCategoryData(categories);
-        setMonthlyExpenseData(monthlyResponse.data?.monthlyExpenses || []);
-        setIncomeExpenseTrendData(trendResponse.data?.trend || []);
-      } catch (dashboardError) {
-        setError(dashboardError.response?.data?.message || 'Failed to load dashboard data.');
-        setSelectedSavingsTracker(null);
-        setComparison(null);
-        setSummary({
-          totalBalance: 0,
-          monthlyIncome: 0,
-          monthlyExpenses: 0,
-          totalSavings: 0,
-          cumulativeBalance: 0,
-        });
-        setExpenseCategoryData([]);
-        setMonthlyExpenseData([]);
-        setIncomeExpenseTrendData([]);
-      } finally {
-        setSummaryLoading(false);
-        setAnalyticsLoading(false);
-      }
-    };
-
     loadDashboardData();
-  }, [currentUser, selectedMonth, selectedYear, expenses, income]);
+  }, [loadDashboardData]);
 
   useEffect(() => {
     const loadInsights = async () => {
@@ -727,6 +727,7 @@ const DashboardPage = () => {
       <SavingsGoalModal
         isOpen={showSavingsModal}
         onClose={() => setShowSavingsModal(false)}
+        onGoalSet={loadDashboardData}
         currentGoal={selectedSavingsTracker}
         currencyFormatter={currencyFormatter}
         targetMonth={selectedMonth}
