@@ -52,6 +52,7 @@ const GroupDetailsPage = () => {
   const [selectedParticipantIds, setSelectedParticipantIds] = useState([]);
   const [settlementForm, setSettlementForm] = useState(defaultSettlementForm);
   const [submittingSettleAll, setSubmittingSettleAll] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('All');
 
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showSettlementModal, setShowSettlementModal] = useState(false);
@@ -201,6 +202,31 @@ const GroupDetailsPage = () => {
       .sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
   }, [balances, memberList]);
 
+  const myBalance = useMemo(() => {
+    if (!currentMemberId) return null;
+    return memberBalances.find((member) => member.id === currentMemberId) || null;
+  }, [currentMemberId, memberBalances]);
+
+  const mySettlementTotals = useMemo(() => {
+    if (!currentMemberId) return { owe: 0, receive: 0 };
+    const owe = simplifiedDebts
+      .filter((item) => String(item.fromUserId) === String(currentMemberId))
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const receive = simplifiedDebts
+      .filter((item) => String(item.toUserId) === String(currentMemberId))
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    return { owe, receive };
+  }, [currentMemberId, simplifiedDebts]);
+
+  const mySettlementSuggestions = useMemo(() => {
+    if (!currentMemberId) return [];
+    return simplifiedDebts.filter(
+      (item) =>
+        String(item.fromUserId) === String(currentMemberId) ||
+        String(item.toUserId) === String(currentMemberId)
+    );
+  }, [currentMemberId, simplifiedDebts]);
+
   const transactionRows = useMemo(() => {
     const rows = [];
     expenses.forEach((expense) => {
@@ -223,6 +249,31 @@ const GroupDetailsPage = () => {
     });
     return rows.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [expenses, settlements, memberLookup]);
+
+  const expenseCategories = useMemo(() => {
+    const map = new Map();
+    expenses.forEach((expense) => {
+      const key = expense.category || 'Group Expense';
+      map.set(key, (map.get(key) || 0) + Number(expense.amount || 0));
+    });
+    return Array.from(map.entries())
+      .map(([category, total]) => ({ category, total }))
+      .sort((a, b) => b.total - a.total);
+  }, [expenses]);
+
+  const expensesByCategory = useMemo(() => {
+    const grouped = {};
+    expenses.forEach((expense) => {
+      const key = expense.category || 'Group Expense';
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(expense);
+    });
+    return Object.entries(grouped).map(([category, items]) => ({
+      category,
+      items: items.sort((a, b) => new Date(b.occurredAt || b.createdAt) - new Date(a.occurredAt || a.createdAt)),
+      total: items.reduce((sum, item) => sum + Number(item.amount || 0), 0),
+    }));
+  }, [expenses]);
 
   const loadGroupModule = async () => {
     if (!groupId || !currentUser?.uid) return;
@@ -599,7 +650,7 @@ const GroupDetailsPage = () => {
                         </span>
                         <div>
                           <strong>{member.label}</strong>
-                          <small>{member.email || member.role}</small>
+                          <small>{member.role || 'Member'}</small>
                         </div>
                       </div>
                       <div className="group-member-meta">
@@ -615,6 +666,42 @@ const GroupDetailsPage = () => {
                     </div>
                   ))}
                   {!memberBalances.length && <p className="groups-empty-state">No members found.</p>}
+                </div>
+              </article>
+              <article className="group-panel">
+                <div className="group-panel-head">
+                  <h3><ArrowRightLeft size={15} /> Settle Up Overview</h3>
+                  <span className="group-panel-meta">Who owes who, at a glance</span>
+                </div>
+                <div className="group-summary-grid">
+                  <div className="group-summary-card">
+                    <span>You owe</span>
+                    <strong>{formatCurrency(mySettlementTotals.owe, 'INR')}</strong>
+                    <small>Across {mySettlementSuggestions.filter((item) => String(item.fromUserId) === String(currentMemberId)).length} items</small>
+                  </div>
+                  <div className="group-summary-card">
+                    <span>You are owed</span>
+                    <strong>{formatCurrency(mySettlementTotals.receive, 'INR')}</strong>
+                    <small>Across {mySettlementSuggestions.filter((item) => String(item.toUserId) === String(currentMemberId)).length} items</small>
+                  </div>
+                  <div className="group-summary-card">
+                    <span>Your net</span>
+                    <strong className={myBalance?.net >= 0 ? 'is-positive' : 'is-negative'}>
+                      {formatCurrency(myBalance?.net || 0, 'INR')}
+                    </strong>
+                    <small>{myBalance?.net >= 0 ? 'You should receive overall.' : 'You should pay overall.'}</small>
+                  </div>
+                </div>
+                <div className="group-settle-pulse">
+                  {mySettlementSuggestions.slice(0, 4).map((item) => (
+                    <div key={`${item.fromUserId}-${item.toUserId}-${item.amount}`} className="group-settle-pill">
+                      <span>{getMemberLabel(item.fromUserId)}</span>
+                      <span className="group-settle-dot" />
+                      <span>{getMemberLabel(item.toUserId)}</span>
+                      <strong>{formatCurrency(item.amount, 'INR')}</strong>
+                    </div>
+                  ))}
+                  {!mySettlementSuggestions.length && <p className="groups-empty-state">No pending settlements for you.</p>}
                 </div>
               </article>
               <article className="group-panel">
@@ -641,9 +728,40 @@ const GroupDetailsPage = () => {
                 <h3><ReceiptText size={15} /> Expenses</h3>
                 <button type="button" className="groups-cta" onClick={openCreateExpense}><Plus size={14} /> Add Expense</button>
               </div>
+              <div className="group-expense-filters">
+                <button
+                  type="button"
+                  className={`group-filter-chip ${activeCategory === 'All' ? 'is-active' : ''}`}
+                  onClick={() => setActiveCategory('All')}
+                >
+                  All ({expenses.length})
+                </button>
+                {expenseCategories.map((item) => (
+                  <button
+                    key={item.category}
+                    type="button"
+                    className={`group-filter-chip ${activeCategory === item.category ? 'is-active' : ''}`}
+                    onClick={() => setActiveCategory(item.category)}
+                  >
+                    {item.category} ({item.total ? formatCurrency(item.total, 'INR') : '0'})
+                  </button>
+                ))}
+              </div>
               <div className="group-expense-list">
-                {expenses.map((expense) => (
-                  <button key={expense._id} type="button" className="group-expense-card" onClick={() => setSelectedExpense(expense)}>
+                {expensesByCategory
+                  .filter((bucket) => activeCategory === 'All' || bucket.category === activeCategory)
+                  .map((bucket) => (
+                    <div key={bucket.category} className="group-expense-category">
+                      <div className="group-expense-category-head">
+                        <div>
+                          <h4>{bucket.category}</h4>
+                          <small>{bucket.items.length} expenses</small>
+                        </div>
+                        <strong>{formatCurrency(bucket.total, 'INR')}</strong>
+                      </div>
+                      <div className="group-expense-list">
+                        {bucket.items.map((expense) => (
+                          <button key={expense._id} type="button" className="group-expense-card" onClick={() => setSelectedExpense(expense)}>
                     {(() => {
                       const myShare = getMyExpenseShare(expense);
                       const mySettled = getMyExpenseSettled(expense);
@@ -655,67 +773,82 @@ const GroupDetailsPage = () => {
 
                       return (
                         <>
-                    <div className="group-expense-main">
-                      <div className="group-expense-title">
-                        <strong>{expense.title}</strong>
-                        <small>
-                          {expense.category || 'Group Expense'} · Paid by {getMemberLabel(expense.paidByUserId)} ·{' '}
-                          {new Date(expense.occurredAt || expense.createdAt).toLocaleDateString()}
-                        </small>
-                      </div>
-                      <div className="group-expense-splits">
-                        <span>Split between</span>
-                        <div className="group-split-tags">
-                          {(expense.splits || []).length > 0 ? (
-                            expense.splits.map((split) => (
-                              <span key={`${expense._id}-${split.userId}`} className="group-split-tag">
-                                {getMemberLabel(split.userId)} {formatCurrency(split.amount, 'INR')}
+                            <div className="group-expense-main">
+                              <div className="group-expense-title">
+                                <strong>{expense.title}</strong>
+                                <small>
+                                  Paid by {getMemberLabel(expense.paidByUserId)} · Added by {getMemberLabel(expense.createdByUserId)} ·{' '}
+                                  {new Date(expense.occurredAt || expense.createdAt).toLocaleDateString()}
+                                </small>
+                              </div>
+                              <div className="group-expense-meta-row">
+                                <div className="group-expense-tags">
+                                  <span className="group-chip group-chip-muted">{expense.splitType} split</span>
+                                  <span className={`group-chip ${expense.settlementStatus === 'settled' ? 'group-chip-success' : 'group-chip-warning'}`}>
+                                    {expense.settlementStatus || 'pending'}
+                                  </span>
+                                </div>
+                                <div className="group-expense-amount">
+                                  {formatCurrency(expense.amount, 'INR')}
+                                </div>
+                              </div>
+                              <div className="group-expense-splits">
+                                <span>Split with</span>
+                                <div className="group-split-tags">
+                                  {(expense.splits || []).length > 0 ? (
+                                    expense.splits.map((split) => (
+                                      <span key={`${expense._id}-${split.userId}`} className="group-split-tag">
+                                        {getMemberLabel(split.userId)} {formatCurrency(split.amount, 'INR')}
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span className="group-split-tag">Split equally</span>
+                                  )}
+                                </div>
+                              </div>
+                              {currentMemberId && (
+                                <div className="group-expense-status">
+                                  <div>
+                                    <span>Your share</span>
+                                    <strong>{formatCurrency(myShare, 'INR')}</strong>
+                                  </div>
+                                  <div>
+                                    <span>Settled</span>
+                                    <strong>{formatCurrency(mySettled, 'INR')}</strong>
+                                  </div>
+                                  <div>
+                                    <span>Remaining</span>
+                                    <strong>{formatCurrency(myRemaining, 'INR')}</strong>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="group-expense-actions">
+                              {showMySettle && (
+                                <button
+                                  type="button"
+                                  className="groups-cta group-expense-settle"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    openExpenseSettlement(expense);
+                                  }}
+                                >
+                                  {myRemaining > 0 ? 'Settle' : 'Settled'}
+                                </button>
+                              )}
+                              <span className="group-inline-actions">
+                                <Pencil size={13} onClick={(e) => { e.stopPropagation(); openEditExpense(expense); }} />
+                                <Trash2 size={13} onClick={(e) => { e.stopPropagation(); setConfirmDeleteExpense(expense); }} />
                               </span>
-                            ))
-                          ) : (
-                            <span className="group-split-tag">Split equally</span>
-                          )}
-                        </div>
-                      </div>
-                      {showMySettle && (
-                        <div className="group-expense-myshare">
-                          <span>Your share</span>
-                          <strong>{formatCurrency(myShare, 'INR')}</strong>
-                          {mySettled > 0 && <small>Settled {formatCurrency(mySettled, 'INR')}</small>}
-                          {myRemaining > 0 && <small>Remaining {formatCurrency(myRemaining, 'INR')}</small>}
-                        </div>
-                      )}
-                    </div>
-                    <div className="group-expense-actions">
-                      <strong>{formatCurrency(expense.amount, 'INR')}</strong>
-                      <div className="group-expense-badges">
-                        <span className={`group-chip ${expense.settlementStatus === 'settled' ? 'group-chip-success' : 'group-chip-warning'}`}>
-                          {expense.settlementStatus || 'pending'}
-                        </span>
-                        <span className="group-chip group-chip-muted">{expense.splitType} split</span>
-                      </div>
-                      {showMySettle && (
-                        <button
-                          type="button"
-                          className="groups-cta group-expense-settle"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            openExpenseSettlement(expense);
-                          }}
-                        >
-                          {myRemaining > 0 ? 'Settle' : 'Settled'}
-                        </button>
-                      )}
-                      <span className="group-inline-actions">
-                        <Pencil size={13} onClick={(e) => { e.stopPropagation(); openEditExpense(expense); }} />
-                        <Trash2 size={13} onClick={(e) => { e.stopPropagation(); setConfirmDeleteExpense(expense); }} />
-                      </span>
-                    </div>
+                            </div>
                         </>
                       );
                     })()}
-                  </button>
-                ))}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 {!expenses.length && <p className="groups-empty-state">No expenses added yet.</p>}
               </div>
             </div>
@@ -735,12 +868,12 @@ const GroupDetailsPage = () => {
                     <div key={index} className="group-settle-row">
                       <div>
                         <strong>{getMemberLabel(item.fromUserId)}</strong>
-                        <small>{getMemberRole(item.fromUserId)}</small>
+                        <small>Pays</small>
                       </div>
-                      <span className="group-settle-arrow">owes</span>
+                      <span className="group-settle-arrow">→</span>
                       <div>
                         <strong>{getMemberLabel(item.toUserId)}</strong>
-                        <small>{getMemberRole(item.toUserId)}</small>
+                        <small>Receives</small>
                       </div>
                       <div className="group-settle-actions">
                         <strong>{formatCurrency(item.amount, 'INR')}</strong>
@@ -1008,6 +1141,7 @@ const GroupDetailsPage = () => {
               <div className="group-feed-item"><span>Category</span><strong>{selectedExpense.category || 'Group Expense'}</strong></div>
               <div className="group-feed-item"><span>Amount</span><strong>{formatCurrency(selectedExpense.amount, 'INR')}</strong></div>
               <div className="group-feed-item"><span>Paid by</span><strong>{getMemberLabel(selectedExpense.paidByUserId)}</strong></div>
+              <div className="group-feed-item"><span>Added by</span><strong>{getMemberLabel(selectedExpense.createdByUserId)}</strong></div>
               <div className="group-feed-item"><span>Date</span><strong>{new Date(selectedExpense.occurredAt || selectedExpense.createdAt).toLocaleString()}</strong></div>
               <div className="group-feed-item"><span>Split Type</span><strong>{selectedExpense.splitType}</strong></div>
               <div className="group-feed-item"><span>Notes</span><strong>{selectedExpense.notes || 'No notes'}</strong></div>

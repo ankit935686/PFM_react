@@ -1,29 +1,49 @@
+const stripCodeFence = (input) => input.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+
+const stripToJsonObject = (input) => {
+  const firstBrace = input.indexOf('{');
+  const lastBrace = input.lastIndexOf('}');
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return input.slice(firstBrace, lastBrace + 1);
+  }
+  return input;
+};
+
+const repairJson = (input) => {
+  const withoutTrailingCommas = input.replace(/,\s*([}\]])/g, '$1');
+  return withoutTrailingCommas;
+};
+
 const parseJson = (raw) => {
   const input = String(raw || '').trim();
-  try {
-    return JSON.parse(input);
-  } catch (_error) {
-    const deFenced = input.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+  if (!input) return null;
+  const attempts = [
+    input,
+    stripCodeFence(input),
+    stripToJsonObject(stripCodeFence(input)),
+    repairJson(stripToJsonObject(stripCodeFence(input))),
+  ];
+
+  for (const attempt of attempts) {
     try {
-      return JSON.parse(deFenced);
-    } catch (_error2) {
-      const firstBrace = deFenced.indexOf('{');
-      const lastBrace = deFenced.lastIndexOf('}');
-      if (firstBrace >= 0 && lastBrace > firstBrace) {
-        const sliced = deFenced.slice(firstBrace, lastBrace + 1);
-        try {
-          return JSON.parse(sliced);
-        } catch (_error3) {
-          return null;
-        }
-      }
-      return null;
+      return JSON.parse(attempt);
+    } catch (_error) {
+      continue;
     }
   }
+
+  return null;
 };
 
 const toArray = (v) => (Array.isArray(v) ? v : []);
 const asText = (v) => String(v || '').trim();
+
+const extractTextField = (raw) => {
+  const input = String(raw || '');
+  const match = input.match(/"text"\s*:\s*"([\s\S]*?)"\s*(,|})/i);
+  if (!match) return '';
+  return match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').trim();
+};
 
 const fallbackResponse = (text) => ({
   executiveSummary: '',
@@ -51,8 +71,9 @@ const fallbackResponse = (text) => ({
 const formatCopilotResponse = ({ rawContent, context, classification, provider }) => {
   const parsed = parseJson(rawContent);
   if (!parsed) {
+    const extractedText = extractTextField(rawContent);
     return {
-      ...fallbackResponse(rawContent),
+      ...fallbackResponse(extractedText || rawContent),
       meta: {
         provider,
         intent: classification.intent,

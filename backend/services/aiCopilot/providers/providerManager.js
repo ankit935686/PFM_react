@@ -20,8 +20,16 @@ const markFailure = (provider, error) => {
   providerHealth[provider].lastUsedAt = new Date().toISOString();
 };
 
+const getProviderOrder = () => {
+  const raw = String(process.env.COPILOT_PROVIDER_ORDER || 'groq').trim();
+  return raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+};
+
 const callWithProviders = async (prompt) => {
-  const providerOrder = ['gemini', 'groq'];
+  const providerOrder = getProviderOrder();
   let lastError = null;
 
   for (const provider of providerOrder) {
