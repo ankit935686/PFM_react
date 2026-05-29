@@ -17,9 +17,19 @@ const aiCopilotRoutes = require('./routes/aiCopilotRoutes');
 
 const app = express();
 
+const corsOrigins = env.frontendUrls;
+
 app.use(
 	cors({
-		origin: env.frontendUrl,
+		origin: (origin, callback) => {
+			if (!origin) {
+				return callback(null, true);
+			}
+			if (corsOrigins.includes(origin)) {
+				return callback(null, true);
+			}
+			return callback(new Error('Not allowed by CORS'));
+		},
 	})
 );
 app.use(express.json({ limit: '10mb' }));

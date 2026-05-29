@@ -13,6 +13,9 @@ requiredVars.forEach((key) => {
 
 module.exports = {
   port: Number(process.env.PORT),
-  frontendUrl: process.env.FRONTEND_URL,
+  frontendUrls: String(process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean),
   mongoUri: process.env.MONGODB_URI,
 };
