@@ -120,6 +120,7 @@ const SavingsPage = () => {
       Authorization: `Bearer ${token}`,
       'x-firebase-uid': currentUser.uid,
       'x-firebase-email': currentUser.email || '',
+      'x-firebase-name': currentUser.displayName || '',
     };
   };
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Users, X } from 'lucide-react';
+import { EllipsisVertical, Plus, TrendingUp, UserRoundPlus, Users, X } from 'lucide-react';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -21,6 +21,7 @@ const GroupsPage = () => {
       Authorization: `Bearer ${token}`,
       'x-firebase-uid': currentUser.uid,
       'x-firebase-email': currentUser.email || '',
+      'x-firebase-name': currentUser.displayName || '',
     };
   };
 
@@ -91,39 +92,42 @@ const GroupsPage = () => {
 
   return (
     <section className="groups-page-premium">
-      <header className="groups-premium-hero">
+      <header className="groups-premium-hero split-hero">
         <div>
-          <h1>Groups Dashboard</h1>
-          <p>Create or join groups and open a dedicated collaborative finance workspace for each one.</p>
+          <h1>Split</h1>
+          <p>Create groups and split expenses with friends</p>
         </div>
         <div className="groups-hero-actions">
+          <button type="button" className="groups-cta groups-cta-ghost" onClick={() => setShowJoinModal(true)}><UserRoundPlus size={14} /> Join Group</button>
           <button type="button" className="groups-cta" onClick={() => setShowCreateModal(true)}><Plus size={14} /> Create Group</button>
-          <button type="button" className="groups-cta groups-cta-ghost" onClick={() => setShowJoinModal(true)}><Users size={14} /> Join Group</button>
         </div>
       </header>
 
       {error && <p className="rounded-xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</p>}
 
-      <div className="groups-left-rail">
-        <div className="groups-search-wrap">
-          <Search size={14} />
-          <input
-            placeholder="Search groups..."
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-          />
-        </div>
+      <div className="groups-left-rail split-groups-rail">
         <div className="groups-card-list groups-grid-cards">
           {filteredGroups.map((group) => (
-            <Link key={group._id} className="group-card" to={`/groups/${group._id}`}>
-              <div className="group-card-head">
+            <Link key={group._id} className="group-card split-group-card" to={`/groups/${group._id}`}>
+              <div className="group-card-head split-group-head">
+                <span className="split-group-avatar"><Users size={18} /></span>
                 <strong>{group.name}</strong>
                 {group.amOwner && <span className="group-owner-pill">Owner</span>}
+                <span className="split-group-menu"><EllipsisVertical size={16} /></span>
               </div>
-              <p>{group.description || 'No description added yet.'}</p>
+              <div className="split-group-stats">
+                <div>
+                  <small><Users size={12} /> Members</small>
+                  <strong>{group.memberCount || 0}</strong>
+                </div>
+                <div>
+                  <small><TrendingUp size={12} /> Expenses</small>
+                  <strong>{group.expenseCount || 0}</strong>
+                </div>
+              </div>
               <div className="group-card-meta">
-                <span>{group.memberCount} members</span>
-                <span>{group.category || 'General'}</span>
+                <span>Total Spent</span>
+                <strong>{`₹${Number(group.totalSpent || 0).toLocaleString('en-IN')}`}</strong>
               </div>
             </Link>
           ))}
@@ -162,4 +166,3 @@ const GroupsPage = () => {
 };
 
 export default GroupsPage;
-

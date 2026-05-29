@@ -75,6 +75,7 @@ const AnalyticsPage = () => {
           Authorization: `Bearer ${token}`,
           'x-firebase-uid': currentUser.uid,
           'x-firebase-email': currentUser.email || '',
+            'x-firebase-name': currentUser.displayName || '',
         };
         const query = `month=${selectedMonth}&year=${selectedYear}`;
 

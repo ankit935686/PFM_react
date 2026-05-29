@@ -3,7 +3,7 @@ const User = require('../models/userModel');
 const extractFirebaseUid = (req) => {
   return (
     req.headers['x-firebase-uid'] ||
-    req.headers['x-user-id'] ||
+    req.headers['x-user-id'] || 
     req.userId ||
     ''
   );
@@ -13,6 +13,7 @@ const requireFirebaseUser = async (req, res, next) => {
   try {
     const firebaseUid = extractFirebaseUid(req);
     const email = req.headers['x-firebase-email'] || req.headers['x-user-email'] || '';
+    const displayName = req.headers['x-firebase-name'] || req.headers['x-firebase-display-name'] || '';
 
     if (!firebaseUid) {
       return res.status(401).json({
@@ -25,6 +26,7 @@ const requireFirebaseUser = async (req, res, next) => {
       {
         $set: {
           email,
+          displayName,
         },
       },
       {

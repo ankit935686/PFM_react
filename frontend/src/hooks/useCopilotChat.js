@@ -167,6 +167,7 @@ export const useCopilotChat = ({ currentUser }) => {
           Authorization: `Bearer ${token}`,
           'x-firebase-uid': currentUser.uid,
           'x-firebase-email': currentUser.email || '',
+          'x-firebase-name': currentUser.displayName || '',
         };
         const response = await api.post(
           '/api/copilot/chat',

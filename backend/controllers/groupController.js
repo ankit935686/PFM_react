@@ -64,6 +64,7 @@ const createGroup = async (req, res) => {
     if (!name || !String(name).trim()) return res.status(400).json({ message: 'Group name is required.' });
 
     const user = await User.findById(userId).lean();
+    const displayName = user?.displayName || user?.email || 'Owner';
 
     let createdGroup;
     await session.withTransaction(async () => {
@@ -79,7 +80,7 @@ const createGroup = async (req, res) => {
               {
                 userId,
                 role: 'owner',
-                displayNameSnapshot: user?.email || 'Owner',
+                displayNameSnapshot: displayName,
                 emailSnapshot: user?.email || '',
               },
             ],
@@ -119,8 +120,35 @@ const listGroups = async (req, res) => {
     const userId = getUserIdFromRequest(req);
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
     const groups = await Group.find({ 'members.userId': userId, archived: false }).sort({ updatedAt: -1 }).lean();
+    const groupIds = groups.map((group) => group._id);
+    const expenseStats = await GroupExpense.aggregate([
+      { $match: { groupId: { $in: groupIds }, isDeleted: false } },
+      {
+        $group: {
+          _id: '$groupId',
+          expenseCount: { $sum: 1 },
+          totalSpent: { $sum: { $ifNull: ['$amount', 0] } },
+        },
+      },
+    ]);
+    const statsMap = new Map(
+      expenseStats.map((item) => [
+        String(item._id),
+        {
+          expenseCount: Number(item.expenseCount || 0),
+          totalSpent: round2(item.totalSpent || 0),
+        },
+      ])
+    );
     return res.status(200).json({
-      groups: groups.map((group) => normalizeGroupForUser(group, userId)),
+      groups: groups.map((group) => {
+        const stats = statsMap.get(String(group._id)) || { expenseCount: 0, totalSpent: 0 };
+        return {
+          ...normalizeGroupForUser(group, userId),
+          expenseCount: stats.expenseCount,
+          totalSpent: stats.totalSpent,
+        };
+      }),
     });
   } catch (error) {
     return res.status(500).json({ message: 'Failed to fetch groups', error: error.message });
@@ -134,7 +162,23 @@ const getGroupById = async (req, res) => {
     const group = await Group.findById(groupId).lean();
     if (!group) return res.status(404).json({ message: 'Group not found.' });
     ensureGroupMembership(group, userId);
-    return res.status(200).json({ group: normalizeGroupForUser(group, userId) });
+    const memberIds = (group.members || []).map((member) => member.userId);
+    const userMap = new Map(
+      (await User.find({ _id: { $in: memberIds } }, { displayName: 1, email: 1 }).lean()).map((u) => [String(u._id), u])
+    );
+    const enrichedGroup = {
+      ...group,
+      members: (group.members || []).map((member) => {
+        const profile = userMap.get(String(member.userId));
+        const name = profile?.displayName || member.displayNameSnapshot || profile?.email || member.emailSnapshot || '';
+        return {
+          ...member,
+          displayNameSnapshot: name,
+          emailSnapshot: member.emailSnapshot || profile?.email || '',
+        };
+      }),
+    };
+    return res.status(200).json({ group: normalizeGroupForUser(enrichedGroup, userId) });
   } catch (error) {
     return res.status(403).json({ message: error.message || 'Failed to fetch group' });
   }
@@ -149,6 +193,7 @@ const joinGroup = async (req, res) => {
     if (!inviteCode) return res.status(400).json({ message: 'inviteCode is required.' });
 
     const user = await User.findById(userId).lean();
+    const displayName = user?.displayName || user?.email || 'Member';
     let groupDoc;
     await session.withTransaction(async () => {
       groupDoc = await Group.findOne({ inviteCode: String(inviteCode).trim().toUpperCase(), archived: false }).session(session);
@@ -158,7 +203,7 @@ const joinGroup = async (req, res) => {
         groupDoc.members.push({
           userId,
           role: 'member',
-          displayNameSnapshot: user?.email || 'Member',
+          displayNameSnapshot: displayName,
           emailSnapshot: user?.email || '',
         });
         await groupDoc.save({ session });
@@ -202,6 +247,7 @@ const addMember = async (req, res) => {
     }
     const user = await User.findOne(firebaseUid ? { firebaseUid } : { email }).lean();
     if (!user) return res.status(404).json({ message: 'User not found.' });
+    const displayName = user.displayName || user.email || 'Member';
 
     await session.withTransaction(async () => {
       const group = await Group.findById(groupId).session(session);
@@ -212,7 +258,7 @@ const addMember = async (req, res) => {
         group.members.push({
           userId: user._id,
           role: ['owner', 'admin', 'member'].includes(role) ? role : 'member',
-          displayNameSnapshot: user.email || 'Member',
+          displayNameSnapshot: displayName,
           emailSnapshot: user.email || '',
         });
         await group.save({ session });

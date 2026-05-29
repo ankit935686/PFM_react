@@ -1,6 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowRightLeft, BarChart3, Bell, ChevronLeft, Pencil, Plus, ReceiptText, Trash2, Users, Wallet, X } from 'lucide-react';
+import {
+  ArrowRightLeft,
+  BarChart3,
+  Bell,
+  CheckCircle2,
+  ChevronLeft,
+  CircleDollarSign,
+  Clock3,
+  Copy,
+  Filter,
+  Pencil,
+  Plus,
+  ReceiptText,
+  Sparkles,
+  Trash2,
+  TrendingUp,
+  UserRound,
+  Users,
+  Wallet,
+  X,
+} from 'lucide-react';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../lib/currency';
@@ -53,6 +73,10 @@ const GroupDetailsPage = () => {
   const [settlementForm, setSettlementForm] = useState(defaultSettlementForm);
   const [submittingSettleAll, setSubmittingSettleAll] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const [analyticsPaidBy, setAnalyticsPaidBy] = useState('All');
+  const [analyticsCategoryFilter, setAnalyticsCategoryFilter] = useState('All');
+  const [analyticsTimeframe, setAnalyticsTimeframe] = useState('all');
 
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showSettlementModal, setShowSettlementModal] = useState(false);
@@ -72,6 +96,7 @@ const GroupDetailsPage = () => {
       Authorization: `Bearer ${token}`,
       'x-firebase-uid': currentUser.uid,
       'x-firebase-email': currentUser.email || '', 
+      'x-firebase-name': currentUser.displayName || '',
     };
   };
 
@@ -82,7 +107,8 @@ const GroupDetailsPage = () => {
       const email = member.emailSnapshot || '';
       const displayName = member.displayNameSnapshot || '';
       const fallback = email ? email.split('@')[0] : '';
-      const label = displayName || (fallback ? `${fallback.charAt(0).toUpperCase()}${fallback.slice(1)}` : id);
+      const safeDisplayName = displayName.includes('@') ? '' : displayName;
+      const label = safeDisplayName || (fallback ? `${fallback.charAt(0).toUpperCase()}${fallback.slice(1)}` : id);
       map.set(id, {
         id,
         label,
@@ -157,8 +183,21 @@ const GroupDetailsPage = () => {
     }));
   }, [analytics]);
 
+  const avatarPalette = ['#a78bfa', '#38bdf8', '#f472b6', '#34d399', '#f59e0b', '#f97316'];
+  const getAvatarTone = (seed) => {
+    const index = Math.abs(String(seed || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % avatarPalette.length;
+    return avatarPalette[index];
+  };
+  const getInitials = (label) => {
+    const safe = String(label || '').trim();
+    if (!safe) return '?';
+    const parts = safe.split(' ').filter(Boolean);
+    return parts.length === 1 ? parts[0].slice(0, 2).toUpperCase() : `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  };
+
   const getMemberLabel = (userId) => memberLookup.get(String(userId))?.label || String(userId).slice(-6);
   const getMemberRole = (userId) => memberLookup.get(String(userId))?.role || 'Member';
+  const getMemberEmail = (userId) => memberLookup.get(String(userId))?.email || '';
   const getMyExpenseShare = (expense) => {
     if (!currentMemberId) return 0;
     const split = (expense.splits || []).find((item) => String(item.userId) === String(currentMemberId));
@@ -207,26 +246,6 @@ const GroupDetailsPage = () => {
     return memberBalances.find((member) => member.id === currentMemberId) || null;
   }, [currentMemberId, memberBalances]);
 
-  const mySettlementTotals = useMemo(() => {
-    if (!currentMemberId) return { owe: 0, receive: 0 };
-    const owe = simplifiedDebts
-      .filter((item) => String(item.fromUserId) === String(currentMemberId))
-      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
-    const receive = simplifiedDebts
-      .filter((item) => String(item.toUserId) === String(currentMemberId))
-      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
-    return { owe, receive };
-  }, [currentMemberId, simplifiedDebts]);
-
-  const mySettlementSuggestions = useMemo(() => {
-    if (!currentMemberId) return [];
-    return simplifiedDebts.filter(
-      (item) =>
-        String(item.fromUserId) === String(currentMemberId) ||
-        String(item.toUserId) === String(currentMemberId)
-    );
-  }, [currentMemberId, simplifiedDebts]);
-
   const transactionRows = useMemo(() => {
     const rows = [];
     expenses.forEach((expense) => {
@@ -259,6 +278,220 @@ const GroupDetailsPage = () => {
     return Array.from(map.entries())
       .map(([category, total]) => ({ category, total }))
       .sort((a, b) => b.total - a.total);
+  }, [expenses]);
+
+  const analyticsExpenses = useMemo(() => {
+    const now = new Date();
+    return expenses.filter((expense) => {
+      const matchesPayer = analyticsPaidBy === 'All' || String(expense.paidByUserId) === String(analyticsPaidBy);
+      const categoryKey = expense.category || 'Group Expense';
+      const matchesCategory = analyticsCategoryFilter === 'All' || categoryKey === analyticsCategoryFilter;
+
+      if (!matchesPayer || !matchesCategory) return false;
+      if (analyticsTimeframe === 'all') return true;
+
+      const expenseDate = new Date(expense.occurredAt || expense.createdAt);
+      if (analyticsTimeframe === '7d') {
+        const start = new Date(now);
+        start.setDate(now.getDate() - 7);
+        return expenseDate >= start;
+      }
+      if (analyticsTimeframe === '30d') {
+        const start = new Date(now);
+        start.setDate(now.getDate() - 30);
+        return expenseDate >= start;
+      }
+      if (analyticsTimeframe === 'month') {
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        return expenseDate >= start;
+      }
+      return true;
+    });
+  }, [expenses, analyticsPaidBy, analyticsCategoryFilter, analyticsTimeframe]);
+
+  const analyticsCategoryRows = useMemo(() => {
+    const grouped = new Map();
+    analyticsExpenses.forEach((expense) => {
+      const key = expense.category || 'Group Expense';
+      grouped.set(key, (grouped.get(key) || 0) + Number(expense.amount || 0));
+    });
+    const total = Array.from(grouped.values()).reduce((sum, value) => sum + value, 0);
+    return Array.from(grouped.entries())
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        percent: total ? Math.round((amount / total) * 100) : 0,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [analyticsExpenses]);
+
+  const analyticsTotalSpent = useMemo(
+    () => analyticsExpenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0),
+    [analyticsExpenses]
+  );
+  const analyticsAvgTicket = analyticsExpenses.length ? analyticsTotalSpent / analyticsExpenses.length : 0;
+  const analyticsTopSpender = useMemo(() => {
+    const grouped = new Map();
+    analyticsExpenses.forEach((expense) => {
+      const key = String(expense.paidByUserId);
+      grouped.set(key, (grouped.get(key) || 0) + Number(expense.amount || 0));
+    });
+    const best = Array.from(grouped.entries()).sort((a, b) => b[1] - a[1])[0];
+    if (!best) return null;
+    return { label: getMemberLabel(best[0]), amount: best[1] };
+  }, [analyticsExpenses, memberLookup]);
+
+  const analyticsMemberRows = useMemo(() => {
+    const grouped = new Map();
+    analyticsExpenses.forEach((expense) => {
+      const key = String(expense.paidByUserId);
+      grouped.set(key, (grouped.get(key) || 0) + Number(expense.amount || 0));
+    });
+    return Array.from(grouped.entries())
+      .map(([userId, amount]) => ({ userId, label: getMemberLabel(userId), amount }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [analyticsExpenses, memberLookup]);
+
+  const analyticsTimeline = useMemo(() => {
+    const grouped = new Map();
+    analyticsExpenses.forEach((expense) => {
+      const date = new Date(expense.occurredAt || expense.createdAt);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      grouped.set(key, (grouped.get(key) || 0) + Number(expense.amount || 0));
+    });
+    return Array.from(grouped.entries())
+      .map(([date, amount]) => ({ date, amount }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-8);
+  }, [analyticsExpenses]);
+
+  const expenseSections = useMemo(() => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfYesterday = new Date(startOfToday);
+    startOfYesterday.setDate(startOfToday.getDate() - 1);
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfToday.getDate() - 6);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const getBucket = (date) => {
+      if (date >= startOfToday) return 'Today';
+      if (date >= startOfYesterday) return 'Yesterday';
+      if (date >= startOfWeek) return 'This Week';
+      if (date >= startOfMonth) return 'Earlier This Month';
+      return 'Older';
+    };
+
+    const filtered = expenses.filter((expense) => {
+      if (activeCategory === 'All') return true;
+      return (expense.category || 'Group Expense') === activeCategory;
+    });
+
+    const buckets = filtered.reduce((acc, expense) => {
+      const occurred = new Date(expense.occurredAt || expense.createdAt);
+      const bucket = getBucket(occurred);
+      if (!acc[bucket]) acc[bucket] = [];
+      acc[bucket].push(expense);
+      return acc;
+    }, {});
+
+    const order = ['Today', 'Yesterday', 'This Week', 'Earlier This Month', 'Older'];
+    return order
+      .filter((label) => buckets[label]?.length)
+      .map((label) => ({
+        label,
+        items: buckets[label].sort((a, b) => new Date(b.occurredAt || b.createdAt) - new Date(a.occurredAt || a.createdAt)),
+      }));
+  }, [expenses, activeCategory]);
+
+  const settlementCards = useMemo(() => {
+    return simplifiedDebts.map((item) => {
+      const fromId = String(item.fromUserId);
+      const toId = String(item.toUserId);
+      const isYouPaying = currentMemberId && fromId === String(currentMemberId);
+      const isYouReceiving = currentMemberId && toId === String(currentMemberId);
+      const status = isYouPaying ? 'you-owe' : isYouReceiving ? 'you-receive' : 'neutral';
+      return {
+        id: `${fromId}-${toId}-${item.amount}`,
+        fromId,
+        toId,
+        amount: Number(item.amount || 0),
+        status,
+      };
+    });
+  }, [simplifiedDebts, currentMemberId]);
+
+  const activityTimeline = useMemo(() => {
+    const items = activity.map((item) => ({
+      id: item._id,
+      type: item.type,
+      title: item.title,
+      description: item.description,
+      date: item.createdAt,
+      actorId: item.actorUserId,
+    }));
+
+    if (items.length) {
+      return items.sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+
+    const fallback = [];
+    expenses.forEach((expense) => {
+      fallback.push({
+        id: `expense-${expense._id}`,
+        type: 'expense_added',
+        title: `${getMemberLabel(expense.createdByUserId)} added ${expense.title}`,
+        description: `Paid by ${getMemberLabel(expense.paidByUserId)} · ${formatCurrency(expense.amount, 'INR')}`,
+        date: expense.createdAt,
+        actorId: expense.createdByUserId,
+      });
+    });
+    settlements.forEach((settlement) => {
+      fallback.push({
+        id: `settlement-${settlement._id}`,
+        type: 'settlement_added',
+        title: `${getMemberLabel(settlement.paidByUserId)} settled up`,
+        description: `${formatCurrency(settlement.amount, 'INR')} with ${getMemberLabel(settlement.receivedByUserId)}`,
+        date: settlement.createdAt,
+        actorId: settlement.paidByUserId,
+      });
+    });
+    return fallback.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [activity, expenses, settlements, memberLookup]);
+
+  const contributionRows = useMemo(() => {
+    const map = new Map();
+    expenses.forEach((expense) => {
+      const key = String(expense.paidByUserId);
+      map.set(key, (map.get(key) || 0) + Number(expense.amount || 0));
+    });
+    return Array.from(map.entries())
+      .map(([userId, total]) => ({
+        userId,
+        label: getMemberLabel(userId),
+        total,
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+  }, [expenses, memberLookup]);
+
+  const mostActiveMember = useMemo(() => {
+    if (activity.length) {
+      const countMap = new Map();
+      activity.forEach((item) => {
+        const key = String(item.actorUserId || '');
+        countMap.set(key, (countMap.get(key) || 0) + 1);
+      });
+      const ranked = Array.from(countMap.entries()).sort((a, b) => b[1] - a[1]);
+      if (ranked.length) return getMemberLabel(ranked[0][0]);
+    }
+    return contributionRows[0]?.label || 'N/A';
+  }, [activity, contributionRows, memberLookup]);
+
+  const settlementCompletionRate = useMemo(() => {
+    if (!expenses.length) return 0;
+    const settledCount = expenses.filter((expense) => expense.settlementStatus === 'settled').length;
+    return Math.round((settledCount / expenses.length) * 100);
   }, [expenses]);
 
   const expensesByCategory = useMemo(() => {
@@ -573,17 +806,33 @@ const GroupDetailsPage = () => {
     }
   };
 
+  const copyInviteCode = async () => {
+    if (!groupDetails?.inviteCode) return;
+    try {
+      await navigator.clipboard.writeText(groupDetails.inviteCode);
+      setInviteCopied(true);
+      setTimeout(() => setInviteCopied(false), 2000);
+    } catch (_error) {
+      setInviteCopied(false);
+    }
+  };
+
   return (
     <section className="groups-page-premium">
-      <header className="groups-premium-hero">
-        <div>
-          <h1>{groupDetails?.name || 'Group Workspace'}</h1>
-          <p>Track shared expenses, settlements, and analytics in one workspace.</p>
-          <Link to="/groups" className="groups-back-link"><ChevronLeft size={14} /> Back to groups</Link>
+      <header className="group-workspace-hero">
+        <div className="group-hero-left split-detail-left">
+          <Link to="/groups" className="group-hero-back split-back-button"><ChevronLeft size={16} /></Link>
+          <div className="group-hero-title">
+            <h1>{groupDetails?.name || 'Group Workspace'}</h1>
+          </div>
         </div>
-        <div className="groups-hero-actions">
-          <button type="button" className="groups-cta" onClick={openCreateExpense}><Plus size={14} /> Add Expense</button>
-          <button type="button" className="groups-cta groups-cta-ghost" onClick={() => setShowSettlementModal(true)}><ArrowRightLeft size={14} /> Settle</button>
+        <div className="group-hero-actions split-detail-actions">
+          <button type="button" className="group-invite-card split-invite-card" onClick={copyInviteCode}>
+            <span>Invite Code</span>
+            <strong>{groupDetails?.inviteCode || '------'}</strong>
+            <Copy size={18} />
+          </button>
+          {inviteCopied && <span className="group-hero-toast">Invite code copied</span>}
         </div>
       </header>
 
@@ -592,39 +841,32 @@ const GroupDetailsPage = () => {
 
       {groupDetails && (
         <>
-          <section className="group-header-banner">
-            <div>
-              <h2>{groupDetails.name}</h2>
-              <p>{groupDetails.description || 'Track shared expenses and settle up cleanly.'}</p>
-              <div className="group-member-avatars">
-                {memberList.map((member) => (
-                  <span key={member.id} className="group-avatar-pill" title={member.label}>
-                    {member.label.slice(0, 1).toUpperCase()}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="group-invite-card">
-              <span>Invite Code</span>
-              <strong>{groupDetails.inviteCode}</strong>
-            </div>
+          <section className="group-summary-strip split-overview-strip">
+            <article>
+              <span><Users size={14} /> Members</span>
+              <strong>{groupDetails?.members?.length || 0}</strong>
+              <small>People in this group</small>
+            </article>
+            <article>
+              <span><ReceiptText size={14} /> Expenses</span>
+              <strong>{analytics?.groupOverview?.expenseCount || expenses.length}</strong>
+              <small>Expenses logged</small>
+            </article>
+            <article>
+              <span><Wallet size={14} /> Total Spent</span>
+              <strong>{formatCurrency(analytics?.groupOverview?.totalSpent || 0, 'INR')}</strong>
+              <small>Across all members</small>
+            </article>
           </section>
 
-          <section className="group-kpi-grid">
-            <article><span>Members</span><strong>{groupDetails.members?.length || 0}</strong></article>
-            <article><span>Expenses</span><strong>{analytics?.groupOverview?.expenseCount || expenses.length}</strong></article>
-            <article><span>Total Spent</span><strong>{formatCurrency(analytics?.groupOverview?.totalSpent || 0, 'INR')}</strong></article>
-            <article><span>Your Balance</span><strong>{formatCurrency(analytics?.groupOverview?.yourBalance || 0, 'INR')}</strong></article>
-          </section>
-
-          <nav className="group-tabs-nav">
+          <nav className="group-tabs-segmented">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   type="button"
-                  className={activeTab === tab.id ? 'is-active' : ''}
+                  className={`group-tab-pill ${activeTab === tab.id ? 'is-active' : ''}`}
                   onClick={() => setActiveTab(tab.id)}
                 >
                   <Icon size={14} />
@@ -635,7 +877,7 @@ const GroupDetailsPage = () => {
           </nav>
 
           {activeTab === 'Overview' && (
-            <div className="group-tab-grid">
+            <div className="group-tab-grid split-overview-grid">
               <article className="group-panel">
                 <div className="group-panel-head">
                   <h3><Users size={15} /> Members</h3>
@@ -645,8 +887,8 @@ const GroupDetailsPage = () => {
                   {memberBalances.map((member) => (
                     <div key={member.id} className="group-member-row">
                       <div className="group-member-info">
-                        <span className="group-member-avatar">
-                          {member.label.slice(0, 1).toUpperCase()}
+                        <span className="group-member-avatar" style={{ '--avatar-tone': getAvatarTone(member.id) }}>
+                          {getInitials(member.label)}
                         </span>
                         <div>
                           <strong>{member.label}</strong>
@@ -666,57 +908,6 @@ const GroupDetailsPage = () => {
                     </div>
                   ))}
                   {!memberBalances.length && <p className="groups-empty-state">No members found.</p>}
-                </div>
-              </article>
-              <article className="group-panel">
-                <div className="group-panel-head">
-                  <h3><ArrowRightLeft size={15} /> Settle Up Overview</h3>
-                  <span className="group-panel-meta">Who owes who, at a glance</span>
-                </div>
-                <div className="group-summary-grid">
-                  <div className="group-summary-card">
-                    <span>You owe</span>
-                    <strong>{formatCurrency(mySettlementTotals.owe, 'INR')}</strong>
-                    <small>Across {mySettlementSuggestions.filter((item) => String(item.fromUserId) === String(currentMemberId)).length} items</small>
-                  </div>
-                  <div className="group-summary-card">
-                    <span>You are owed</span>
-                    <strong>{formatCurrency(mySettlementTotals.receive, 'INR')}</strong>
-                    <small>Across {mySettlementSuggestions.filter((item) => String(item.toUserId) === String(currentMemberId)).length} items</small>
-                  </div>
-                  <div className="group-summary-card">
-                    <span>Your net</span>
-                    <strong className={myBalance?.net >= 0 ? 'is-positive' : 'is-negative'}>
-                      {formatCurrency(myBalance?.net || 0, 'INR')}
-                    </strong>
-                    <small>{myBalance?.net >= 0 ? 'You should receive overall.' : 'You should pay overall.'}</small>
-                  </div>
-                </div>
-                <div className="group-settle-pulse">
-                  {mySettlementSuggestions.slice(0, 4).map((item) => (
-                    <div key={`${item.fromUserId}-${item.toUserId}-${item.amount}`} className="group-settle-pill">
-                      <span>{getMemberLabel(item.fromUserId)}</span>
-                      <span className="group-settle-dot" />
-                      <span>{getMemberLabel(item.toUserId)}</span>
-                      <strong>{formatCurrency(item.amount, 'INR')}</strong>
-                    </div>
-                  ))}
-                  {!mySettlementSuggestions.length && <p className="groups-empty-state">No pending settlements for you.</p>}
-                </div>
-              </article>
-              <article className="group-panel">
-                <div className="group-panel-head">
-                  <h3>Recent Activity</h3>
-                  <span className="group-panel-meta">Latest updates</span>
-                </div>
-                <div className="group-feed">
-                  {activity.slice(0, 10).map((item) => (
-                    <div key={item._id} className="group-feed-item">
-                      <span>{item.title}</span>
-                      <small>{new Date(item.createdAt).toLocaleString()}</small>
-                    </div>
-                  ))}
-                  {!activity.length && <p className="groups-empty-state">No recent activity.</p>}
                 </div>
               </article>
             </div>
@@ -748,20 +939,15 @@ const GroupDetailsPage = () => {
                 ))}
               </div>
               <div className="group-expense-list">
-                {expensesByCategory
-                  .filter((bucket) => activeCategory === 'All' || bucket.category === activeCategory)
-                  .map((bucket) => (
-                    <div key={bucket.category} className="group-expense-category">
-                      <div className="group-expense-category-head">
-                        <div>
-                          <h4>{bucket.category}</h4>
-                          <small>{bucket.items.length} expenses</small>
-                        </div>
-                        <strong>{formatCurrency(bucket.total, 'INR')}</strong>
-                      </div>
-                      <div className="group-expense-list">
-                        {bucket.items.map((expense) => (
-                          <button key={expense._id} type="button" className="group-expense-card" onClick={() => setSelectedExpense(expense)}>
+                {expenseSections.map((section) => (
+                  <div key={section.label} className="group-expense-section">
+                    <div className="group-expense-section-head">
+                      <h4>{section.label}</h4>
+                      <small>{section.items.length} expenses</small>
+                    </div>
+                    <div className="group-expense-stack">
+                      {section.items.map((expense) => (
+                        <button key={expense._id} type="button" className="group-expense-card" onClick={() => setSelectedExpense(expense)}>
                     {(() => {
                       const myShare = getMyExpenseShare(expense);
                       const mySettled = getMyExpenseSettled(expense);
@@ -770,6 +956,9 @@ const GroupDetailsPage = () => {
                         currentMemberId &&
                         String(expense.paidByUserId) !== String(currentMemberId) &&
                         myShare > 0;
+                      const youPaid = currentMemberId && String(expense.paidByUserId) === String(currentMemberId);
+                      const settledLabel = expense.settlementStatus || 'pending';
+                      const statusTone = settledLabel === 'settled' ? 'is-settled' : settledLabel === 'partial' ? 'is-partial' : 'is-pending';
 
                       return (
                         <>
@@ -777,16 +966,15 @@ const GroupDetailsPage = () => {
                               <div className="group-expense-title">
                                 <strong>{expense.title}</strong>
                                 <small>
-                                  Paid by {getMemberLabel(expense.paidByUserId)} · Added by {getMemberLabel(expense.createdByUserId)} ·{' '}
+                                  {youPaid ? 'You paid' : `Paid by ${getMemberLabel(expense.paidByUserId)}`} · Added by {getMemberLabel(expense.createdByUserId)} ·{' '}
                                   {new Date(expense.occurredAt || expense.createdAt).toLocaleDateString()}
                                 </small>
                               </div>
                               <div className="group-expense-meta-row">
                                 <div className="group-expense-tags">
+                                  <span className={`group-chip group-chip-muted ${youPaid ? 'is-highlight' : ''}`}>{expense.category || 'Group Expense'}</span>
                                   <span className="group-chip group-chip-muted">{expense.splitType} split</span>
-                                  <span className={`group-chip ${expense.settlementStatus === 'settled' ? 'group-chip-success' : 'group-chip-warning'}`}>
-                                    {expense.settlementStatus || 'pending'}
-                                  </span>
+                                  <span className={`group-chip group-chip-status ${statusTone}`}>{settledLabel}</span>
                                 </div>
                                 <div className="group-expense-amount">
                                   {formatCurrency(expense.amount, 'INR')}
@@ -844,11 +1032,11 @@ const GroupDetailsPage = () => {
                         </>
                       );
                     })()}
-                          </button>
-                        ))}
-                      </div>
+                        </button>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                ))}
                 {!expenses.length && <p className="groups-empty-state">No expenses added yet.</p>}
               </div>
             </div>
@@ -858,46 +1046,78 @@ const GroupDetailsPage = () => {
             <div className="group-tab-grid">
               <article className="group-panel">
                 <div className="group-panel-head">
-                  <h3><ArrowRightLeft size={15} /> Settlement Suggestions</h3>
-                  <button type="button" className="groups-cta" disabled={!simplifiedDebts.length || submittingSettleAll} onClick={settleAllSuggested}>
-                    {submittingSettleAll ? 'Settling...' : 'Settle all'}
-                  </button>
+                  <h3><ArrowRightLeft size={15} /> Who owes whom</h3>
+                  <span className="group-panel-meta">Optimized relationships</span>
                 </div>
-                <div className="group-settlement-list">
-                  {simplifiedDebts.map((item, index) => (
-                    <div key={index} className="group-settle-row">
-                      <div>
-                        <strong>{getMemberLabel(item.fromUserId)}</strong>
-                        <small>Pays</small>
+                <div className="group-settlement-grid">
+                  {settlementCards.map((card) => (
+                    <div key={card.id} className={`group-settlement-card ${card.status}`}>
+                      <div className="group-settlement-party">
+                        <span className="group-member-avatar" style={{ '--avatar-tone': getAvatarTone(card.fromId) }}>{getInitials(getMemberLabel(card.fromId))}</span>
+                        <div>
+                          <strong>{getMemberLabel(card.fromId)}</strong>
+                          <small>Pays</small>
+                        </div>
                       </div>
-                      <span className="group-settle-arrow">→</span>
-                      <div>
-                        <strong>{getMemberLabel(item.toUserId)}</strong>
-                        <small>Receives</small>
+                      <div className="group-settlement-amount">
+                        <span>→</span>
+                        <strong>{formatCurrency(card.amount, 'INR')}</strong>
                       </div>
-                      <div className="group-settle-actions">
-                        <strong>{formatCurrency(item.amount, 'INR')}</strong>
-                        <button type="button" className="groups-cta" onClick={() => openSuggestedSettlement(item)}>
-                          Settle Up
+                      <div className="group-settlement-party">
+                        <span className="group-member-avatar" style={{ '--avatar-tone': getAvatarTone(card.toId) }}>{getInitials(getMemberLabel(card.toId))}</span>
+                        <div>
+                          <strong>{getMemberLabel(card.toId)}</strong>
+                          <small>Receives</small>
+                        </div>
+                      </div>
+                      <div className="group-settlement-actions">
+                        <button
+                          type="button"
+                          className="groups-cta"
+                          onClick={() =>
+                            openSuggestedSettlement({
+                              fromUserId: card.fromId,
+                              toUserId: card.toId,
+                              amount: card.amount,
+                            })
+                          }
+                        >
+                          Settle Now
+                        </button>
+                        <button type="button" className="groups-cta groups-cta-ghost" disabled>
+                          Remind
                         </button>
                       </div>
                     </div>
                   ))}
-                  {!simplifiedDebts.length && <p className="groups-empty-state">No suggested settlements right now.</p>}
+                  {!settlementCards.length && (
+                    <div className="groups-empty-state group-empty-card">
+                      <p>No settlements needed right now.</p>
+                      <small>When expenses are added, suggestions will appear here.</small>
+                    </div>
+                  )}
+                </div>
+                <div className="group-settle-toolbar">
+                  <button type="button" className="groups-cta" disabled={!simplifiedDebts.length || submittingSettleAll} onClick={settleAllSuggested}>
+                    {submittingSettleAll ? 'Settling...' : 'Settle all'}
+                  </button>
+                  <span className="group-panel-meta">Minimizes number of transactions</span>
                 </div>
               </article>
               <article className="group-panel">
                 <div className="group-panel-head">
-                  <h3>Settlement History</h3>
-                  <span className="group-panel-meta">Recent payouts</span>
+                  <h3>Settlement Ledger</h3>
+                  <span className="group-panel-meta">Verified payments</span>
                 </div>
-                <div className="group-feed">
+                <div className="group-ledger-list">
                   {settlements.map((item) => (
-                    <div key={item._id} className="group-feed-item">
-                      <span>{getMemberLabel(item.paidByUserId)} paid {getMemberLabel(item.receivedByUserId)}</span>
-                      <div className="group-settle-meta">
-                        <strong>{formatCurrency(item.amount, 'INR')}</strong>
-                        <small>{new Date(item.settledAt || item.createdAt).toLocaleDateString()}</small>
+                    <div key={item._id} className="group-ledger-row">
+                      <div className="group-ledger-main">
+                        <strong>{getMemberLabel(item.paidByUserId)} paid {getMemberLabel(item.receivedByUserId)}</strong>
+                        <small>{new Date(item.settledAt || item.createdAt).toLocaleString()}</small>
+                      </div>
+                      <div className="group-ledger-amount">
+                        <CheckCircle2 size={14} /> {formatCurrency(item.amount, 'INR')}
                       </div>
                     </div>
                   ))}
@@ -911,25 +1131,31 @@ const GroupDetailsPage = () => {
             <div className="group-tab-grid">
               <article className="group-panel">
                 <div className="group-panel-head">
-                  <h3>Transactions</h3>
-                  <span className="group-panel-meta">Expenses and settlements</span>
+                  <h3>Activity Timeline</h3>
+                  <span className="group-panel-meta">Shared finance events</span>
                 </div>
-                <div className="group-transaction-list">
-                  {transactionRows.map((row) => (
-                    <div key={row.id} className="group-transaction-row">
-                      <div>
-                        <strong>{row.title}</strong>
-                        <small>{row.subtitle}</small>
+                <div className="group-timeline">
+                  {activityTimeline.map((item) => (
+                    <div key={item.id} className="group-timeline-row">
+                      <div className="group-timeline-icon">
+                        {item.type?.includes('expense') ? <ReceiptText size={14} /> : item.type?.includes('settlement') ? <ArrowRightLeft size={14} /> : <Sparkles size={14} />}
                       </div>
-                      <div className="group-transaction-meta">
-                        <span>{new Date(row.date).toLocaleDateString()}</span>
-                        <strong className={row.amount >= 0 ? 'group-amount-positive' : 'group-amount-negative'}>
-                          {formatCurrency(row.amount, 'INR')}
-                        </strong>
+                      <div className="group-timeline-content">
+                        <strong>{item.title}</strong>
+                        <small>{item.description}</small>
+                      </div>
+                      <div className="group-timeline-meta">
+                        <span>{new Date(item.date).toLocaleDateString()}</span>
+                        <span className="group-timeline-actor">{getMemberLabel(item.actorId)}</span>
                       </div>
                     </div>
                   ))}
-                  {!transactionRows.length && <p className="groups-empty-state">No transactions yet.</p>}
+                  {!activityTimeline.length && (
+                    <div className="groups-empty-state group-empty-card">
+                      <p>No activity yet.</p>
+                      <small>Add your first expense to start the group timeline.</small>
+                    </div>
+                  )}
                 </div>
               </article>
               <article className="group-panel">
@@ -937,56 +1163,179 @@ const GroupDetailsPage = () => {
                   <h3><Bell size={15} /> Notifications</h3>
                   <span className="group-panel-meta">Group alerts</span>
                 </div>
-                <div className="group-feed">
+                <div className="group-notification-list">
                   {notifications.map((item) => (
                     <button
                       key={item._id}
                       type="button"
-                      className={`group-feed-item ${item.read ? '' : 'group-noti-unread'}`}
+                      className={`group-notification-card ${item.read ? '' : 'is-unread'}`}
                       onClick={() => markNotificationRead(item._id)}
                     >
-                      <span>{item.title}</span>
-                      <small>{new Date(item.createdAt).toLocaleString()}</small>
+                      <div>
+                        <strong>{item.title}</strong>
+                        <small>{item.description || 'Group update'}</small>
+                      </div>
+                      <span>{new Date(item.createdAt).toLocaleDateString()}</span>
                     </button>
                   ))}
-                  {!notifications.length && <p className="groups-empty-state">No notifications yet.</p>}
+                  {!notifications.length && (
+                    <div className="groups-empty-state group-empty-card">
+                      <p>No notifications yet.</p>
+                      <small>Reminders and settlement alerts will show here.</small>
+                    </div>
+                  )}
                 </div>
               </article>
             </div>
           )}
 
           {activeTab === 'Analytics' && (
-            <div className="group-tab-grid">
-              <article className="group-panel">
-                <h3>Category Breakdown</h3>
-                <div className="group-feed">
-                  {categoryBlocks.map((item) => (
-                    <div key={item.category} className="group-chart-row">
-                      <div className="group-chart-label">
-                        <span>{item.category}</span>
-                        <small>{formatCurrency(item.amount, 'INR')}</small>
-                      </div>
-                      <div className="group-chart-bar"><span style={{ width: `${item.widthPercent}%` }} /></div>
-                    </div>
-                  ))}
-                  {!categoryBlocks.length && <p className="groups-empty-state">No category data yet.</p>}
+            <div className="group-analytics-layout">
+              <article className="group-panel group-analytics-filters">
+                <div className="group-panel-head">
+                  <h3><Filter size={15} /> Analytics Filters</h3>
+                  <span className="group-panel-meta">Adjust your view of the group finances</span>
+                </div>
+                <div className="group-analytics-filter-grid">
+                  <label>
+                    <span><Users size={13} /> Paid By</span>
+                    <select value={analyticsPaidBy} onChange={(event) => setAnalyticsPaidBy(event.target.value)}>
+                      <option value="All">All Members</option>
+                      {memberList.map((member) => (
+                        <option key={member.id} value={member.id}>{member.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span><Clock3 size={13} /> Category</span>
+                    <select value={analyticsCategoryFilter} onChange={(event) => setAnalyticsCategoryFilter(event.target.value)}>
+                      <option value="All">All Categories</option>
+                      {expenseCategories.map((item) => (
+                        <option key={item.category} value={item.category}>{item.category}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span><TrendingUp size={13} /> Timeframe</span>
+                    <select value={analyticsTimeframe} onChange={(event) => setAnalyticsTimeframe(event.target.value)}>
+                      <option value="all">All Time</option>
+                      <option value="month">This Month</option>
+                      <option value="30d">Last 30 Days</option>
+                      <option value="7d">Last 7 Days</option>
+                    </select>
+                  </label>
                 </div>
               </article>
-              <article className="group-panel">
-                <h3>Member & Trend Insights</h3>
-                <div className="group-feed">
-                  <div className="group-feed-item">
-                    <span>Top Spender</span>
-                    <strong>{topSpender ? `${topSpender.label} (${formatCurrency(topSpender.amount, 'INR')})` : 'N/A'}</strong>
+
+              <div className="group-analytics-kpis">
+                <article className="group-panel group-analytics-kpi">
+                  <span>TOTAL VOLUME</span>
+                  <strong>{formatCurrency(analyticsTotalSpent, 'INR')}</strong>
+                  <small>{analyticsExpenses.length} transactions</small>
+                  <CircleDollarSign size={34} />
+                </article>
+                <article className="group-panel group-analytics-kpi">
+                  <span>AVG. TICKET</span>
+                  <strong>{formatCurrency(analyticsAvgTicket, 'INR')}</strong>
+                  <small>Value per expense</small>
+                  <TrendingUp size={34} />
+                </article>
+                <article className="group-panel group-analytics-kpi">
+                  <span>TOP SPENDER</span>
+                  <strong>{analyticsTopSpender?.label || 'N/A'}</strong>
+                  <small>Active in this view</small>
+                  <UserRound size={34} />
+                </article>
+              </div>
+
+              <div className="group-analytics-main-grid">
+                <article className="group-panel">
+                  <div className="group-panel-head">
+                    <h3>Category Distribution</h3>
+                    <span className="group-panel-meta">{analyticsCategoryRows.length} Categories</span>
                   </div>
-                  {monthlyTrend.map((row) => (
-                    <div key={row.month} className="group-feed-item">
-                      <span>{row.month}</span>
-                      <strong>{formatCurrency(row.amount, 'INR')}</strong>
+                  <div className="group-analytics-donut-wrap">
+                    <div
+                      className="group-analytics-donut"
+                      style={{
+                        background: analyticsCategoryRows.length
+                          ? `conic-gradient(${analyticsCategoryRows.map((item, index) => {
+                              const colors = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
+                              const start = analyticsCategoryRows.slice(0, index).reduce((sum, row) => sum + row.percent, 0);
+                              const end = start + item.percent;
+                              return `${colors[index % colors.length]} ${start}% ${end}%`;
+                            }).join(', ')})`
+                          : 'conic-gradient(#e5e7eb 0% 100%)',
+                      }}
+                    >
+                      <div className="group-analytics-donut-hole" />
                     </div>
-                  ))}
-                </div>
-              </article>
+                  </div>
+                </article>
+
+                <article className="group-panel">
+                  <div className="group-panel-head">
+                    <h3>Spending Breakdown</h3>
+                    <span className="group-panel-meta">By category</span>
+                  </div>
+                  <div className="group-analytics-breakdown">
+                    {analyticsCategoryRows.map((row, index) => {
+                      const colors = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
+                      return (
+                        <div key={row.category} className="group-analytics-break-row">
+                          <div className="group-analytics-break-head">
+                            <span><i style={{ background: colors[index % colors.length] }} />{row.category}</span>
+                            <strong>{formatCurrency(row.amount, 'INR')}</strong>
+                          </div>
+                          <div className="group-analytics-progress">
+                            <span style={{ width: `${Math.max(4, row.percent)}%`, background: colors[index % colors.length] }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {!analyticsCategoryRows.length && <p className="groups-empty-state">No category data yet.</p>}
+                  </div>
+                </article>
+              </div>
+
+              <div className="group-analytics-bottom-grid">
+                <article className="group-panel">
+                  <div className="group-panel-head">
+                    <h3>Expense by Member</h3>
+                    <span className="group-panel-meta">Contribution spread</span>
+                  </div>
+                  <div className="group-analytics-member-bars">
+                    {analyticsMemberRows.map((row) => {
+                      const max = Math.max(1, ...analyticsMemberRows.map((item) => item.amount));
+                      const height = Math.max(10, Math.round((row.amount / max) * 100));
+                      return (
+                        <div key={row.userId} className="group-analytics-member-col">
+                          <div className="group-analytics-member-track">
+                            <span style={{ height: `${height}%` }} />
+                          </div>
+                          <strong>{row.label}</strong>
+                        </div>
+                      );
+                    })}
+                    {!analyticsMemberRows.length && <p className="groups-empty-state">No member expense data.</p>}
+                  </div>
+                </article>
+                <article className="group-panel">
+                  <div className="group-panel-head">
+                    <h3>Timeline</h3>
+                    <span className="group-panel-meta">Recent trend</span>
+                  </div>
+                  <div className="group-analytics-timeline">
+                    {analyticsTimeline.map((row) => (
+                      <div key={row.date} className="group-analytics-time-row">
+                        <span>{new Date(row.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                        <strong>{formatCurrency(row.amount, 'INR')}</strong>
+                      </div>
+                    ))}
+                    {!analyticsTimeline.length && <p className="groups-empty-state">No timeline data yet.</p>}
+                  </div>
+                </article>
+              </div>
             </div>
           )}
         </>
@@ -1208,4 +1557,3 @@ const GroupDetailsPage = () => {
 };
 
 export default GroupDetailsPage;
-
