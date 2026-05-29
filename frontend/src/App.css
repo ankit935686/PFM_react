@@ -6741,6 +6741,23 @@
   min-height: 120px;
 }
 
+.dashboard-ai-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e8eaf6;
+  background: #f8f9ff;
+  color: #5b5bd6;
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.dashboard-ai-refresh:disabled {
+  opacity: 0.65;
+}
+
 .reference-style {
   grid-template-columns: 1fr 220px;
   gap: 8px;

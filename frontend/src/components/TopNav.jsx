@@ -8,7 +8,7 @@ const TopNav = () => {
     <header className="top-nav-wrap">
       <nav className="top-nav">
         <Link className="brand" to="/">
-          PFM
+          WealthWise
         </Link>
 
         <div className="top-nav-links">

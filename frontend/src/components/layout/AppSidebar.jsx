@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ArrowLeftRight, Wallet, PiggyBank, ChartNoAxesCombined, Settings, CalendarDays, Users, CircleDollarSign, Bot } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, Wallet, PiggyBank, ChartNoAxesCombined, CalendarDays, Users, CircleDollarSign, Bot } from 'lucide-react';
 
 const navSections = [
   {
@@ -23,10 +23,6 @@ const navSections = [
       { to: '/calendar', label: 'Calendar', icon: CalendarDays },
     ],
   },
-  {
-    label: 'Settings',
-    items: [{ to: '/settings', label: 'Settings', icon: Settings }],
-  },
 ];
 
 const AppSidebar = ({ mobileOpen, onToggleMobile, onLogout }) => {
@@ -49,8 +45,8 @@ const AppSidebar = ({ mobileOpen, onToggleMobile, onLogout }) => {
             <CircleDollarSign size={20} />
           </span>
           <div>
-            <p className="sidebar-title !text-[25px] !font-extrabold !tracking-[-0.01em] !text-[#1E1E2D]">FinTrack</p>
-            <p className="sidebar-subtitle !text-[12px] !font-medium !text-[#7D8597]">Light Dashboard</p>
+            <p className="sidebar-title !text-[25px] !font-extrabold !tracking-[-0.01em] !text-[#1E1E2D]">WealthWise</p>
+            <p className="sidebar-subtitle !text-[12px] !font-medium !text-[#7D8597]">Smart Finance</p>
           </div>
         </div>
 

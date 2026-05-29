@@ -77,7 +77,7 @@ const ChartsSection = ({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.1 }}
-        className="!font-[Nunito] rounded-xl border border-[#E8EAF6] bg-white p-3 shadow-[0_8px_24px_-20px_rgba(30,30,45,0.2)]"
+        className="!font-[Nunito] rounded-2xl border border-[#E8EAF6] bg-white/90 p-3 shadow-[0_16px_42px_-30px_rgba(76,29,149,0.28)] backdrop-blur-sm"
       >
         <header className="mb-2 flex items-center justify-between">
           <h2 className="text-[13px] font-semibold text-[#1E1E2D]">Expense Breakdown</h2>
@@ -163,7 +163,7 @@ const ChartsSection = ({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.2 }}
-        className="!font-[Nunito] rounded-xl border border-[#E8EAF6] bg-white p-3 shadow-[0_8px_24px_-20px_rgba(30,30,45,0.2)]"
+        className="!font-[Nunito] rounded-2xl border border-[#E8EAF6] bg-white/90 p-3 shadow-[0_16px_42px_-30px_rgba(76,29,149,0.28)] backdrop-blur-sm"
       >
         <header className="mb-2 flex items-center justify-between">
           <h2 className="text-[13px] font-semibold text-[#1E1E2D]">Income vs Expense Overview</h2>

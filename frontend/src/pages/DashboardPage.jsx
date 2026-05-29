@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { RefreshCcw, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useBudgets } from '../context/BudgetContext';
 import { useExpenses } from '../context/ExpenseContext';
@@ -496,33 +496,35 @@ const DashboardPage = () => {
     loadDashboardData();
   }, [loadDashboardData]);
 
+  const loadInsights = useCallback(async () => {
+    if (!currentUser?.uid) {
+      setAiInsights([]);
+      return;
+    }
+
+    setAiInsightsLoading(true);
+    try {
+      const headers = await getAuthHeaders();
+      const response = await api.get(`/api/dashboard/insights?month=${selectedMonth}&year=${selectedYear}`, { headers });
+      setAiInsights(Array.isArray(response.data?.insights) ? response.data.insights : []);
+    } catch (_insightError) {
+      setAiInsights([]);
+    } finally {
+      setAiInsightsLoading(false);
+    }
+  }, [currentUser, selectedMonth, selectedYear]);
+
   useEffect(() => {
-    const loadInsights = async () => {
-      if (!currentUser?.uid) {
-        setAiInsights([]);
-        return;
-      }
-
-      setAiInsightsLoading(true);
-      try {
-        const headers = await getAuthHeaders();
-        const response = await api.get(`/api/dashboard/insights?month=${selectedMonth}&year=${selectedYear}`, { headers });
-        setAiInsights(Array.isArray(response.data?.insights) ? response.data.insights : []);
-      } catch (_insightError) {
-        setAiInsights([]);
-      } finally {
-        setAiInsightsLoading(false);
-      }
-    };
-
     loadInsights();
-  }, [currentUser, selectedMonth, selectedYear, comparison, budgetOverview.percentUsed]);
+  }, [loadInsights, comparison, budgetOverview.percentUsed]);
 
   return (
-    <section className="dashboard-page !font-[Nunito] bg-[#F0F2FF] text-[#1E1E2D]">
-      <header className="dashboard-header-modern dashboard-hero relative rounded-xl border border-[#E8EAF6] bg-white p-4 shadow-[0_8px_24px_-20px_rgba(30,30,45,0.2)] md:p-5">
+    <section className="dashboard-page !font-[Nunito] bg-[radial-gradient(circle_at_top_right,#efe8ff_0%,#f4f5ff_32%,#f0f2ff_72%)] px-1 text-[#1E1E2D]">
+      <header className="dashboard-header-modern dashboard-hero relative overflow-hidden rounded-2xl border border-[#E8EAF6] bg-white/90 p-4 shadow-[0_18px_48px_-32px_rgba(76,29,149,0.35)] backdrop-blur-sm md:p-6">
+        <span className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.22),rgba(255,255,255,0))]" />
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="dashboard-hero-main">
+            <p className="mb-1 inline-flex w-fit rounded-full border border-[#E7DEFF] bg-[#F7F2FF] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6D28D9]">WealthWise</p>
             <h1 className="dashboard-title text-[30px] font-semibold text-[#1E1E2D] md:text-[34px]">
               {profile?.fullName ? `Good Evening, ${profile.fullName}!` : 'Good evening!'}
             </h1>
@@ -569,7 +571,7 @@ const DashboardPage = () => {
         </motion.div>
       )}
 
-      <section className="stat-grid mt-2 grid gap-3">
+      <section className="stat-grid mt-2 grid gap-3 md:gap-4">
         {summaryLoading
           ? [1, 2, 3, 4].map((item) => (
               <article
@@ -599,13 +601,13 @@ const DashboardPage = () => {
         />
       </section>
 
-      <section className="dashboard-operations-grid">
+      <section className="dashboard-operations-grid gap-4">
         <div className="dashboard-operations-main">
           <TransactionsTable recentActivity={recentActivity} currencyFormatter={currencyFormatter} />
         </div>
 
-        <div className="dashboard-operations-side">
-          <article className="dashboard-budget-card rounded-xl border border-[#E8EAF6] bg-white p-3 shadow-[0_8px_24px_-20px_rgba(30,30,45,0.2)]">
+        <div className="dashboard-operations-side gap-4">
+          <article className="dashboard-budget-card rounded-2xl border border-[#E8EAF6] bg-white/90 p-3 shadow-[0_16px_42px_-28px_rgba(76,29,149,0.3)] backdrop-blur-sm">
             <header className="info-card-header flex items-center justify-between gap-3">
               <h2 className="text-[13px] font-semibold text-[#1E1E2D]">Budget Overview</h2>
               <Link to="/budget" className="text-[11px] font-semibold text-[#5B5BD6] hover:text-[#4848C2]">Edit Budget</Link>
@@ -613,7 +615,7 @@ const DashboardPage = () => {
 
             {budgetOverview.hasBudgetData ? (
               <div className="info-card-body grid gap-3">
-                <div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl border border-[#E8EAF6] bg-white px-3 py-2">
+                <div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl border border-[#E8EAF6] bg-gradient-to-r from-white to-[#FBFAFF] px-3 py-2">
                   <div className="grid gap-0.5">
                     <span className="text-[0.68rem] uppercase tracking-[0.12em] text-[#9CA3AF]">Total Spent</span>
                     <strong className="text-lg text-fincheck-text-primary">{currencyFormatter(budgetOverview.totalSpent)}</strong>
@@ -696,33 +698,42 @@ const DashboardPage = () => {
             onSetGoal={() => setShowSavingsModal(true)}
             loading={summaryLoading}
           />
+
+          <section className="dashboard-ai-bottom">
+            <article className="rounded-2xl border border-[#E8EAF6] bg-white/90 p-3 shadow-[0_16px_42px_-28px_rgba(76,29,149,0.3)] backdrop-blur-sm">
+              <header className="info-card-header">
+                <h2 className="text-[13px] font-semibold text-[#1E1E2D]">AI Insights</h2>
+                <button
+                  type="button"
+                  className="dashboard-ai-refresh"
+                  onClick={loadInsights}
+                  disabled={aiInsightsLoading}
+                >
+                  <RefreshCcw size={13} className={aiInsightsLoading ? 'animate-spin' : ''} />
+                  Refresh
+                </button>
+              </header>
+
+              {aiInsightsLoading ? (
+                <p className="info-card-empty">Generating insights...</p>
+              ) : aiInsights.length || fallbackInsights.length ? (
+                <ul className="insights-list compact">
+                  {(aiInsights.length ? aiInsights : fallbackInsights).slice(0, 3).map((insight) => (
+                    <li key={insight.id}>
+                      <p className="insight-title">{insight.title}</p>
+                      <p className="insight-text">{insight.detail}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="info-card-empty compact-empty">
+                  <p>No AI insights yet for this period.</p>
+                  <small>Tip: Add more transactions this month to unlock better guidance.</small>
+                </div>
+              )}
+            </article>
+          </section>
         </div>
-      </section>
-
-      <section className="dashboard-ai-bottom">
-        <article className="rounded-xl border border-[#E8EAF6] bg-white p-3 shadow-[0_8px_24px_-20px_rgba(30,30,45,0.2)]">
-          <header className="info-card-header">
-            <h2 className="text-[13px] font-semibold text-[#1E1E2D]">AI Insights</h2>
-          </header>
-
-          {aiInsightsLoading ? (
-            <p className="info-card-empty">Generating insights...</p>
-          ) : aiInsights.length || fallbackInsights.length ? (
-            <ul className="insights-list compact">
-              {(aiInsights.length ? aiInsights : fallbackInsights).slice(0, 3).map((insight) => (
-                <li key={insight.id}>
-                  <p className="insight-title">{insight.title}</p>
-                  <p className="insight-text">{insight.detail}</p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="info-card-empty compact-empty">
-              <p>No AI insights yet for this period.</p>
-              <small>Tip: Add more transactions this month to unlock better guidance.</small>
-            </div>
-          )}
-        </article>
       </section>
 
       <SavingsGoalModal

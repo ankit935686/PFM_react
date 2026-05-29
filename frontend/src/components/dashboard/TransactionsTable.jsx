@@ -60,7 +60,7 @@ export const TransactionsTable = ({ recentActivity, currencyFormatter }) => {
   }, [recentActivity, activeChip, search]);
 
   return (
-    <section className="!font-[Nunito] rounded-xl border border-[#E8EAF6] bg-white p-3 shadow-[0_8px_24px_-20px_rgba(30,30,45,0.2)]">
+    <section className="!font-[Nunito] rounded-2xl border border-[#E8EAF6] bg-white/90 p-3 shadow-[0_16px_42px_-30px_rgba(76,29,149,0.3)] backdrop-blur-sm">
       <div className="mb-2 flex items-center justify-between">
         <h2 className="text-[13px] font-semibold text-[#1E1E2D]">Recent Transactions</h2>
 
@@ -90,7 +90,7 @@ export const TransactionsTable = ({ recentActivity, currencyFormatter }) => {
 
       <div className="grid gap-2">
         {filtered.map((entry) => (
-          <motion.div key={entry.id} whileHover={{ y: -2 }} className="transaction-row grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 rounded-lg border border-[#EEF1F7] bg-white px-3 py-2 hover:bg-[#F8F9FF]">
+          <motion.div key={entry.id} whileHover={{ y: -2 }} className="transaction-row grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 rounded-xl border border-[#EEF1F7] bg-gradient-to-r from-white to-[#FBFAFF] px-3 py-2 hover:bg-[#F8F9FF]">
             <div
               className={`flex h-9 w-9 items-center justify-center rounded-lg border ${
                 entry.kind === 'income'

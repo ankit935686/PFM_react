@@ -459,8 +459,45 @@ const getIncomeExpenseTrend = async (req, res) => {
   }
 };
 
-const buildDynamicInsights = async ({ monthLabel, monthlyIncome, monthlyExpenses, savings, budgetUsage, expenseChange }) => {
-  if (!process.env.GROQ_API_KEY) {
+const parseInsightsFromText = (rawText) => {
+  if (!rawText) return [];
+  const direct = rawText.trim();
+  const fenced = direct.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
+  const candidates = [direct, fenced];
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+      const insights = Array.isArray(parsed?.insights) ? parsed.insights : [];
+      const normalized = insights
+        .filter((item) => item?.title && item?.detail)
+        .slice(0, 4)
+        .map((item, index) => ({
+          id: `${index}-${String(item.title).toLowerCase().replace(/\s+/g, '-')}`,
+          title: String(item.title),
+          detail: String(item.detail),
+        }));
+      if (normalized.length) return normalized;
+    } catch (_error) {
+      // continue
+    }
+  }
+  return [];
+};
+
+const buildDynamicInsights = async ({
+  monthLabel,
+  monthlyIncome,
+  monthlyExpenses,
+  savings,
+  budgetUsage,
+  expenseChange,
+  summary,
+  categories,
+  trend,
+  recentExpenses,
+  recentIncome,
+}) => {
+  if (!process.env.GEMINI_API_KEY) {
     return [];
   }
 
@@ -473,58 +510,62 @@ const buildDynamicInsights = async ({ monthLabel, monthlyIncome, monthlyExpenses
       budgetUsagePercent: budgetUsage,
       monthOverMonthExpenseChangePercent: expenseChange,
     },
+    dashboardContext: {
+      summary,
+      topExpenseCategories: categories,
+      sixMonthTrend: trend,
+      recentExpenses,
+      recentIncome,
+    },
     instructions: {
       output: 'Return JSON only: { "insights": [ { "title": "...", "detail": "..." } ] }',
-      categories: ['spending_pattern', 'budget_warning', 'savings_suggestion', 'expense_trend'],
+      categories: ['spending_pattern', 'budget_warning', 'savings_suggestion', 'expense_trend', 'cashflow_action'],
       count: '2 to 4 practical insights, no fluff, no markdown',
-      style: 'concise professional fintech advisor',
+      style: 'concise professional fintech advisor, each detail max 22 words',
     },
   };
 
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'llama3-8b-8192',
-        temperature: 0.25,
-        max_tokens: 320,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a finance analyst. Return strict JSON only with the requested shape.',
-          },
+        generationConfig: {
+          temperature: 0.35,
+          maxOutputTokens: 420,
+          responseMimeType: 'application/json',
+        },
+        contents: [
           {
             role: 'user',
-            content: JSON.stringify(prompt),
+            parts: [
+              {
+                text: `You are a finance analyst. Return strict JSON only in this shape: {"insights":[{"title":"...","detail":"..."}]}.
+Use this dashboard context and generate actionable insights:
+${JSON.stringify(prompt)}`,
+              },
+            ],
           },
         ],
       }),
-    });
+    }
+    );
 
     if (!response.ok) {
       return [];
     }
 
     const data = await response.json();
-    const content = data?.choices?.[0]?.message?.content?.trim();
+    const content = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
     if (!content) {
       return [];
     }
 
-    const parsed = JSON.parse(content);
-    const insights = Array.isArray(parsed?.insights) ? parsed.insights : [];
-    return insights
-      .filter((item) => item?.title && item?.detail)
-      .slice(0, 4)
-      .map((item, index) => ({
-        id: `${index}-${String(item.title).toLowerCase().replace(/\s+/g, '-')}`,
-        title: String(item.title),
-        detail: String(item.detail),
-      }));
+    return parseInsightsFromText(content);
   } catch (_error) {
     return [];
   }
@@ -542,11 +583,27 @@ const getDashboardInsights = async (req, res) => {
     const previous = getPreviousMonth(year, month);
     const previousBounds = getDateBoundsForMonth(previous.year, previous.month);
 
-    const [incomeStats, expenseStats, previousExpenseStats, monthlyBudgetDoc] = await Promise.all([
+    const [incomeStats, expenseStats, previousIncomeStats, previousExpenseStats, monthlyBudgetDoc, categories, latestExpenses, latestIncome] = await Promise.all([
       aggregateIncomeStats(userId, monthStart, monthEnd),
       aggregateExpenseStats(userId, monthStart, monthEnd),
+      aggregateIncomeStats(userId, previousBounds.monthStart, previousBounds.monthEnd),
       aggregateExpenseStats(userId, previousBounds.monthStart, previousBounds.monthEnd),
       Budget.find({ userId, month, year }).lean(),
+      Expense.aggregate([
+        { $match: { userId, date: { $gte: monthStart, $lt: monthEnd } } },
+        { $group: { _id: '$category', total: { $sum: '$amount' } } },
+        { $sort: { total: -1 } },
+        { $limit: 6 },
+        { $project: { _id: 0, category: { $ifNull: ['$_id', 'Other'] }, total: 1 } },
+      ]),
+      Expense.find({ userId, date: { $gte: monthStart, $lt: monthEnd } })
+        .sort({ date: -1 })
+        .limit(8)
+        .lean(),
+      Income.find({ userId, date: { $gte: monthStart, $lt: monthEnd } })
+        .sort({ date: -1 })
+        .limit(8)
+        .lean(),
     ]);
 
     const monthlyIncome = Number(incomeStats.monthlyIncome || 0);
@@ -559,6 +616,8 @@ const getDashboardInsights = async (req, res) => {
       : null;
 
     const monthLabel = new Date(year, month - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    const previousIncome = Number(previousIncomeStats.monthlyIncome || 0);
+    const previousExpenses = Number(previousExpenseStats.monthlyExpenses || 0);
 
     const insights = await buildDynamicInsights({
       monthLabel,
@@ -567,6 +626,42 @@ const getDashboardInsights = async (req, res) => {
       savings,
       budgetUsage,
       expenseChange,
+      summary: {
+        monthlyIncome,
+        monthlyExpenses,
+        savings,
+        budgetUsage,
+        previousMonth: {
+          income: previousIncome,
+          expenses: previousExpenses,
+        },
+      },
+      categories: categories.map((item) => ({
+        category: item.category,
+        total: Number(item.total || 0),
+      })),
+      trend: [
+        {
+          month: `${previous.month}/${previous.year}`,
+          income: previousIncome,
+          expenses: previousExpenses,
+        },
+        {
+          month: `${month}/${year}`,
+          income: monthlyIncome,
+          expenses: monthlyExpenses,
+        },
+      ],
+      recentExpenses: latestExpenses.map((item) => ({
+        category: item.category || 'Other',
+        amount: Number(item.amount || 0),
+        date: item.date,
+      })),
+      recentIncome: latestIncome.map((item) => ({
+        source: item.source || 'Other',
+        amount: Number(item.amount || 0),
+        date: item.date,
+      })),
     });
 
     return res.status(200).json({

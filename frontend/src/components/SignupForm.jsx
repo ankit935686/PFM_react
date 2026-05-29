@@ -14,6 +14,7 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel,
+  FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "../context/AuthContext"
@@ -73,24 +74,24 @@ export function SignupForm({
   }
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
+    <div className={cn("flex flex-col gap-5", className)} {...props}>
+      <Card className="rounded-3xl border border-[#E1E4EF] bg-[#F8F8FD] py-4 shadow-none">
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Create your account</CardTitle>
-          <CardDescription>
-            Enter your details below to create your account
+          <CardTitle className="text-3xl font-black text-[#20104E]">Create an account</CardTitle>
+          <CardDescription className="text-base text-[#8D96A8]">
+            Sign up with your Google account or email
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
-            <FieldGroup>
+            <FieldGroup className="gap-5">
               <Field>
                 <Button 
                   variant="outline" 
                   type="button"
                   onClick={handleGoogleSignup}
                   disabled={loading}
-                  className="w-full"
+                  className="h-12 w-full rounded-2xl border-[#D9DDE8] bg-[#F4F5FA] text-[15px] font-semibold hover:bg-[#EEF0F8]"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4 mr-2">
                     <path
@@ -100,8 +101,11 @@ export function SignupForm({
                   Sign up with Google
                 </Button>
               </Field>
+              <FieldSeparator className="text-[#9AA2B2] [&_[data-slot=field-separator-content]]:bg-[#F8F8FD]">
+                Or continue with
+              </FieldSeparator>
               <Field>
-                <FieldLabel htmlFor="name">Full Name</FieldLabel>
+                <FieldLabel className="text-base font-semibold text-[#2C2D40]" htmlFor="name">Full Name</FieldLabel>
                 <Input 
                   id="name" 
                   type="text" 
@@ -109,10 +113,11 @@ export function SignupForm({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   disabled={loading}
+                  className="h-12 rounded-2xl border-[#D9DDE8] bg-[#F4F5FA] px-4 text-base"
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <FieldLabel className="text-base font-semibold text-[#2C2D40]" htmlFor="email">Email</FieldLabel>
                 <Input 
                   id="email" 
                   type="email" 
@@ -121,36 +126,41 @@ export function SignupForm({
                   onChange={(e) => setEmail(e.target.value)}
                   required 
                   disabled={loading}
+                  className="h-12 rounded-2xl border-[#D9DDE8] bg-[#F4F5FA] px-4 text-base"
                 />
               </Field>
               <Field>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <Field>
-                    <FieldLabel htmlFor="password">Password</FieldLabel>
+                    <FieldLabel className="text-base font-semibold text-[#2C2D40]" htmlFor="password">Password</FieldLabel>
                     <Input 
                       id="password" 
                       type="password" 
+                      placeholder="Min. 6 characters"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required 
                       disabled={loading}
+                      className="h-12 rounded-2xl border-[#D9DDE8] bg-[#F4F5FA] px-4 text-base"
                     />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="confirm-password">
+                    <FieldLabel className="text-base font-semibold text-[#2C2D40]" htmlFor="confirm-password">
                       Confirm Password
                     </FieldLabel>
                     <Input 
                       id="confirm-password" 
                       type="password" 
+                      placeholder="Re-enter password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required 
                       disabled={loading}
+                      className="h-12 rounded-2xl border-[#D9DDE8] bg-[#F4F5FA] px-4 text-base"
                     />
                   </Field>
                 </div>
-                <FieldDescription>
+                <FieldDescription className="text-xs text-[#8D96A8]">
                   Must be at least 8 characters long.
                 </FieldDescription>
               </Field>
@@ -163,19 +173,19 @@ export function SignupForm({
                 <Button 
                   type="submit" 
                   disabled={loading}
-                  className="w-full"
+                  className="h-12 w-full rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-base font-bold text-white hover:opacity-95"
                 >
                   {loading ? "Creating account..." : "Create Account"}
                 </Button>
-                <FieldDescription className="text-center">
-                  Already have an account? <a href="/login" className="hover:underline">Sign in</a>
+                <FieldDescription className="pt-2 text-center text-base text-[#6D7287]">
+                  Already have an account? <a href="/login" className="font-semibold text-[#6D28D9] hover:underline">Log in</a>
                 </FieldDescription>
               </Field>
             </FieldGroup>
           </form>
         </CardContent>
       </Card>
-      <FieldDescription className="px-6 text-center">
+      <FieldDescription className="px-6 text-center text-sm text-[#929AAD]">
         By clicking continue, you agree to our <a href="#" className="hover:underline">Terms of Service</a>{" "}
         and <a href="#" className="hover:underline">Privacy Policy</a>.
       </FieldDescription>
