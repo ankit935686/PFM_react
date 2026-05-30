@@ -300,7 +300,7 @@ const TransactionsPage = () => {
   const monthYearLabel = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
-    <section className="space-y-6 px-6 pb-6">
+    <section className="transactions-page space-y-6 px-6 pb-6">
       <header className="flex flex-wrap items-center justify-between gap-3 py-5">
         <div>
           <h1 className="text-[22px] font-semibold text-gray-900">Transactions</h1>

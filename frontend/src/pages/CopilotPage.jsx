@@ -82,7 +82,7 @@ const CopilotPage = () => {
   };
 
   return (
-    <section className="relative min-h-[calc(100vh-120px)] overflow-hidden rounded-2xl border border-[#E8EAF6] bg-[#F7F8FC] shadow-[0_20px_40px_-24px_rgba(30,30,45,0.25)]">
+    <section className="copilot-page relative min-h-[calc(100vh-120px)] overflow-hidden rounded-2xl border border-[#E8EAF6] bg-[#F7F8FC] shadow-[0_20px_40px_-24px_rgba(30,30,45,0.25)]">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(123,97,255,0.12),transparent_40%),radial-gradient(circle_at_90%_20%,rgba(110,198,230,0.12),transparent_36%),linear-gradient(180deg,#F8F9FF,#F2F4FF)]" />
       <div className="relative grid min-h-[calc(100vh-120px)] grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)]">
         <div className="hidden xl:block">

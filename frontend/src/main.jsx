@@ -6,23 +6,26 @@ import { BudgetProvider } from './context/BudgetContext'
 import { ExpenseProvider } from './context/ExpenseContext'
 import { IncomeProvider } from './context/IncomeContext'
 import { SavingsProvider } from './context/SavingsContext'
+import { ThemeProvider } from './context/ThemeContext'
 import './index.css'
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <BudgetProvider>
-          <ExpenseProvider>
-            <IncomeProvider>
-              <SavingsProvider>
-                <App />
-              </SavingsProvider>
-            </IncomeProvider>
-          </ExpenseProvider>
-        </BudgetProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <BudgetProvider>
+            <ExpenseProvider>
+              <IncomeProvider>
+                <SavingsProvider>
+                  <App />
+                </SavingsProvider>
+              </IncomeProvider>
+            </ExpenseProvider>
+          </BudgetProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </StrictMode>,
 )

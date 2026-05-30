@@ -75,10 +75,10 @@ export function SignupForm({
 
   return (
     <div className={cn("flex flex-col gap-5", className)} {...props}>
-      <Card className="rounded-3xl border border-[#E1E4EF] bg-[#F8F8FD] py-4 shadow-none">
+      <Card className="rounded-3xl border border-[var(--border)] bg-[var(--bg-card)] py-4 shadow-none">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-black text-[#20104E]">Create an account</CardTitle>
-          <CardDescription className="text-base text-[#8D96A8]">
+          <CardTitle className="text-3xl font-black text-[var(--text-primary)]">Create an account</CardTitle>
+          <CardDescription className="text-base text-[var(--text-secondary)]">
             Sign up with your Google account or email
           </CardDescription>
         </CardHeader>
@@ -91,7 +91,7 @@ export function SignupForm({
                   type="button"
                   onClick={handleGoogleSignup}
                   disabled={loading}
-                  className="h-12 w-full rounded-2xl border-[#D9DDE8] bg-[#F4F5FA] text-[15px] font-semibold hover:bg-[#EEF0F8]"
+                  className="h-12 w-full rounded-2xl border-[var(--border)] bg-[var(--bg-elevated)] text-[15px] font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4 mr-2">
                     <path
@@ -101,11 +101,11 @@ export function SignupForm({
                   Sign up with Google
                 </Button>
               </Field>
-              <FieldSeparator className="text-[#9AA2B2] [&_[data-slot=field-separator-content]]:bg-[#F8F8FD]">
+              <FieldSeparator className="text-[var(--text-muted)] [&_[data-slot=field-separator-content]]:bg-[var(--bg-card)]">
                 Or continue with
               </FieldSeparator>
               <Field>
-                <FieldLabel className="text-base font-semibold text-[#2C2D40]" htmlFor="name">Full Name</FieldLabel>
+                <FieldLabel className="text-base font-semibold text-[var(--text-primary)]" htmlFor="name">Full Name</FieldLabel>
                 <Input 
                   id="name" 
                   type="text" 
@@ -113,11 +113,11 @@ export function SignupForm({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   disabled={loading}
-                  className="h-12 rounded-2xl border-[#D9DDE8] bg-[#F4F5FA] px-4 text-base"
+                  className="h-12 rounded-2xl border-[var(--border)] bg-[var(--bg-elevated)] px-4 text-base text-[var(--text-primary)] focus:border-[var(--accent)]"
                 />
               </Field>
               <Field>
-                <FieldLabel className="text-base font-semibold text-[#2C2D40]" htmlFor="email">Email</FieldLabel>
+                <FieldLabel className="text-base font-semibold text-[var(--text-primary)]" htmlFor="email">Email</FieldLabel>
                 <Input 
                   id="email" 
                   type="email" 
@@ -126,13 +126,13 @@ export function SignupForm({
                   onChange={(e) => setEmail(e.target.value)}
                   required 
                   disabled={loading}
-                  className="h-12 rounded-2xl border-[#D9DDE8] bg-[#F4F5FA] px-4 text-base"
+                  className="h-12 rounded-2xl border-[var(--border)] bg-[var(--bg-elevated)] px-4 text-base text-[var(--text-primary)] focus:border-[var(--accent)]"
                 />
               </Field>
               <Field>
                 <div className="grid grid-cols-1 gap-4">
                   <Field>
-                    <FieldLabel className="text-base font-semibold text-[#2C2D40]" htmlFor="password">Password</FieldLabel>
+                    <FieldLabel className="text-base font-semibold text-[var(--text-primary)]" htmlFor="password">Password</FieldLabel>
                     <Input 
                       id="password" 
                       type="password" 
@@ -141,11 +141,11 @@ export function SignupForm({
                       onChange={(e) => setPassword(e.target.value)}
                       required 
                       disabled={loading}
-                      className="h-12 rounded-2xl border-[#D9DDE8] bg-[#F4F5FA] px-4 text-base"
+                      className="h-12 rounded-2xl border-[var(--border)] bg-[var(--bg-elevated)] px-4 text-base text-[var(--text-primary)] focus:border-[var(--accent)]"
                     />
                   </Field>
                   <Field>
-                    <FieldLabel className="text-base font-semibold text-[#2C2D40]" htmlFor="confirm-password">
+                    <FieldLabel className="text-base font-semibold text-[var(--text-primary)]" htmlFor="confirm-password">
                       Confirm Password
                     </FieldLabel>
                     <Input 
@@ -156,11 +156,11 @@ export function SignupForm({
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required 
                       disabled={loading}
-                      className="h-12 rounded-2xl border-[#D9DDE8] bg-[#F4F5FA] px-4 text-base"
+                      className="h-12 rounded-2xl border-[var(--border)] bg-[var(--bg-elevated)] px-4 text-base text-[var(--text-primary)] focus:border-[var(--accent)]"
                     />
                   </Field>
                 </div>
-                <FieldDescription className="text-xs text-[#8D96A8]">
+                <FieldDescription className="text-xs text-[var(--text-muted)]">
                   Must be at least 8 characters long.
                 </FieldDescription>
               </Field>
@@ -173,19 +173,19 @@ export function SignupForm({
                 <Button 
                   type="submit" 
                   disabled={loading}
-                  className="h-12 w-full rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-base font-bold text-white hover:opacity-95"
+                  className="h-12 w-full rounded-2xl bg-[var(--accent)] text-base font-bold text-white hover:bg-[var(--accent-hover)]"
                 >
                   {loading ? "Creating account..." : "Create Account"}
                 </Button>
-                <FieldDescription className="pt-2 text-center text-base text-[#6D7287]">
-                  Already have an account? <a href="/login" className="font-semibold text-[#6D28D9] hover:underline">Log in</a>
+                <FieldDescription className="pt-2 text-center text-base text-[var(--text-secondary)]">
+                  Already have an account? <a href="/login" className="font-semibold text-[var(--accent)] hover:underline">Log in</a>
                 </FieldDescription>
               </Field>
             </FieldGroup>
           </form>
         </CardContent>
       </Card>
-      <FieldDescription className="px-6 text-center text-sm text-[#929AAD]">
+      <FieldDescription className="px-6 text-center text-sm text-[var(--text-muted)]">
         By clicking continue, you agree to our <a href="#" className="hover:underline">Terms of Service</a>{" "}
         and <a href="#" className="hover:underline">Privacy Policy</a>.
       </FieldDescription>

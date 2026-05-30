@@ -1,6 +1,6 @@
 const SettingsPage = () => {
   return (
-    <section className="space-y-4">
+    <section className="settings-page space-y-4">
       <header>
         <h1 className="text-3xl font-bold text-slate-100">Settings</h1>
         <p className="mt-1 text-sm text-slate-400">Manage preferences, profile behavior, and account actions.</p>

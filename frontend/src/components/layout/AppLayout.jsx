@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { Calendar, Menu, Moon, Plus, Search } from 'lucide-react';
+import { Calendar, Menu, Plus, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../lib/api';
+import ThemeToggle from '../ThemeToggle';
 import AppSidebar from './AppSidebar';
 import NotificationBell from './NotificationBell';
 
@@ -135,9 +136,7 @@ const AppLayout = () => {
               <Calendar size={18} />
             </Link>
             <NotificationBell userId={currentUser?.uid} userLabel={userLabel} />
-            <button className="icon-btn" type="button" aria-label="Toggle theme">
-              <Moon size={18} />
-            </button>
+            <ThemeToggle />
 
             <div className="user-menu">
               <button

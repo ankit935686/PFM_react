@@ -60,14 +60,17 @@ export const TransactionsTable = ({ recentActivity, currencyFormatter }) => {
   }, [recentActivity, activeChip, search]);
 
   return (
-    <section className="!font-[Nunito] rounded-2xl border border-[#E8EAF6] bg-white/90 p-3 shadow-[0_16px_42px_-30px_rgba(76,29,149,0.3)] backdrop-blur-sm">
+    <section
+      className="theme-surface !font-[Nunito] rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-3 backdrop-blur-sm"
+      style={{ boxShadow: 'var(--shadow-card)' }}
+    >
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-[13px] font-semibold text-[#1E1E2D]">Recent Transactions</h2>
+        <h2 className="text-[13px] font-semibold text-[var(--text-primary)]">Recent Transactions</h2>
 
         <div className="relative">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <input
-            className="h-8 rounded-md border border-[#E5E7EB] bg-[#F3F4F6] pl-8 pr-3 text-[11px] text-[#1E1E2D] outline-none focus:border-[#5B5BD6]"
+            className="h-8 rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] pl-8 pr-3 text-[11px] text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
             placeholder="Search activity..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -79,7 +82,7 @@ export const TransactionsTable = ({ recentActivity, currencyFormatter }) => {
         {chips.map((chip) => (
           <button
             key={chip}
-            className={`rounded-md border px-3 py-1 text-[10px] font-semibold ${activeChip === chip ? 'border-[#D9DCFF] bg-[#EEF0FF] text-[#5B5BD6]' : 'border-[#E8EAF6] bg-white text-[#6B7280]'}`}
+            className={`rounded-md border px-3 py-1 text-[10px] font-semibold ${activeChip === chip ? 'border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]' : 'border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-secondary)]'}`}
             type="button"
             onClick={() => setActiveChip(chip)}
           >
@@ -90,12 +93,12 @@ export const TransactionsTable = ({ recentActivity, currencyFormatter }) => {
 
       <div className="grid gap-2">
         {filtered.map((entry) => (
-          <motion.div key={entry.id} whileHover={{ y: -2 }} className="transaction-row grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 rounded-xl border border-[#EEF1F7] bg-gradient-to-r from-white to-[#FBFAFF] px-3 py-2 hover:bg-[#F8F9FF]">
+          <motion.div key={entry.id} whileHover={{ y: -2 }} className="theme-surface transaction-row grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 hover:bg-[var(--bg-hover)]">
             <div
               className={`flex h-9 w-9 items-center justify-center rounded-lg border ${
                 entry.kind === 'income'
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
-                  : 'border-[#D9DCFF] bg-[#EEF0FF] text-[#5B5BD6]'
+                  : 'border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]'
               }`}
               data-kind={entry.kind}
             >
@@ -105,8 +108,8 @@ export const TransactionsTable = ({ recentActivity, currencyFormatter }) => {
               })()}
             </div>
             <div className="transaction-details">
-              <p className="transaction-title text-[12px] font-semibold text-[#1E1E2D]">{entry.title}</p>
-              <p className="transaction-meta text-[10px] text-[#6B7280]">
+              <p className="transaction-title text-[12px] font-semibold text-[var(--text-primary)]">{entry.title}</p>
+              <p className="transaction-meta text-[10px] text-[var(--text-secondary)]">
                 {entry.category} •{' '}
                 {new Date(entry.date).toLocaleDateString('en-US', {
                   month: 'short',

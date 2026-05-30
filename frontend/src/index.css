@@ -155,6 +155,133 @@
 	--app-scrim: rgba(10, 14, 28, 0.58);
 }
 
+html[data-theme="light"] {
+	--bg-base: #f4f5fa;
+	--bg-surface: #ffffff;
+	--bg-elevated: #f0f1f8;
+	--bg-card: #ffffff;
+	--bg-hover: #e8e9f5;
+	--border: #e2e4ef;
+	--text-primary: #0f0f1a;
+	--text-secondary: #5a5c7a;
+	--text-muted: #9496b0;
+	--accent: #7c3aed;
+	--accent-hover: #6d28d9;
+	--accent-soft: rgba(124, 58, 237, 0.1);
+	--accent-border: rgba(124, 58, 237, 0.25);
+	--pill-bg: #ede9fe;
+	--pill-text: #6d28d9;
+	--nav-bg: rgba(255, 255, 255, 0.85);
+	--cta-bg: linear-gradient(135deg, #7c3aed, #4f46e5);
+	--shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+	--shadow-card: 0 2px 12px rgba(0, 0, 0, 0.05);
+
+	--background: var(--bg-base);
+	--foreground: var(--text-primary);
+	--card: var(--bg-card);
+	--card-foreground: var(--text-primary);
+	--popover: var(--bg-surface);
+	--popover-foreground: var(--text-primary);
+	--input: var(--border);
+	--ring: var(--accent);
+
+	--app-background: var(--bg-base);
+	--app-surface: var(--bg-surface);
+	--app-surface-elevated: var(--bg-elevated);
+	--app-surface-soft: var(--bg-hover);
+	--app-border: var(--border);
+	--app-text: var(--text-primary);
+	--app-text-muted: var(--text-secondary);
+	--app-brand: var(--accent);
+	--app-brand-2: var(--accent-hover);
+	--app-brand-soft: var(--accent-soft);
+	--app-brand-strong: var(--accent-hover);
+	--app-shadow-1: var(--shadow-card);
+	--app-shadow-2: var(--shadow);
+}
+
+html[data-theme="dark"] {
+	/* Backgrounds - 4 depth levels */
+	--bg-base: #0C0D14;
+	--bg-surface: #13141F;
+	--bg-card: #1C1D2E;
+	--bg-hover: #252638;
+	--bg-input: #15162280;
+
+	/* Borders */
+	--border: rgba(255,255,255,0.07);
+	--border-subtle: rgba(255,255,255,0.04);
+	--border-accent: rgba(139,92,246,0.35);
+	--border-focus: #8B5CF6;
+
+	/* Text */
+	--text-primary: #EEEEF5;
+	--text-secondary: #8B8DA8;
+	--text-muted: #4E5068;
+
+	/* Accent - purple */
+	--accent: #8B5CF6;
+	--accent-hover: #7C3AED;
+	--accent-soft: rgba(139,92,246,0.12);
+	--accent-glow: rgba(139,92,246,0.18);
+	--pill-bg: rgba(139,92,246,0.15);
+	--pill-text: #C4B5FD;
+
+	/* Semantic status */
+	--green: #4ADE80;
+	--green-bg: rgba(74,222,128,0.10);
+	--green-border: rgba(74,222,128,0.20);
+	--red: #FB7185;
+	--red-bg: rgba(251,113,133,0.10);
+	--red-border: rgba(251,113,133,0.20);
+	--amber: #FCD34D;
+	--amber-bg: rgba(252,211,77,0.10);
+	--amber-border: rgba(252,211,77,0.20);
+	--blue: #60A5FA;
+	--blue-bg: rgba(96,165,250,0.10);
+	--blue-border: rgba(96,165,250,0.20);
+
+	/* Shadows */
+	--shadow-sm: 0 1px 3px rgba(0,0,0,0.40);
+	--shadow-md: 0 4px 16px rgba(0,0,0,0.40);
+	--shadow-lg: 0 8px 32px rgba(0,0,0,0.50);
+	--shadow-accent: 0 0 20px rgba(139,92,246,0.15);
+
+	--bg-elevated: var(--bg-card);
+	--accent-border: var(--border-accent);
+	--nav-bg: rgba(13, 14, 21, 0.85);
+	--cta-bg: linear-gradient(135deg, #4c1d95, #312e81);
+	--shadow: var(--shadow-md);
+	--shadow-card: var(--shadow-sm);
+
+	--background: var(--bg-base);
+	--foreground: var(--text-primary);
+	--card: var(--bg-card);
+	--card-foreground: var(--text-primary);
+	--popover: var(--bg-surface);
+	--popover-foreground: var(--text-primary);
+	--input: var(--bg-input);
+	--ring: var(--border-focus);
+
+	--app-background: var(--bg-base);
+	--app-surface: var(--bg-surface);
+	--app-surface-elevated: var(--bg-card);
+	--app-surface-soft: var(--bg-hover);
+	--app-border: var(--border);
+	--app-text: var(--text-primary);
+	--app-text-muted: var(--text-secondary);
+	--app-brand: var(--accent);
+	--app-brand-2: var(--accent-hover);
+	--app-brand-soft: var(--accent-soft);
+	--app-brand-strong: var(--accent-hover);
+	--app-shadow-1: var(--shadow-sm);
+	--app-shadow-2: var(--shadow-lg);
+	--app-success: var(--green);
+	--app-warning: var(--amber);
+	--app-danger: var(--red);
+	--app-info: var(--blue);
+}
+
 @theme inline {
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
@@ -242,4 +369,13 @@
 body {
 	margin: 0;
 	min-height: 100vh;
+}
+
+html,
+body {
+	transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.theme-surface {
+	transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }

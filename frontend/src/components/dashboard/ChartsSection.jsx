@@ -190,23 +190,23 @@ const ChartsSection = ({
             <ChartContainer config={chartConfig} className="chart-container">
               <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <BarChart data={trendLineData} barGap={4} barCategoryGap="20%" accessibilityLayer>
-                  <CartesianGrid strokeDasharray="2 4" stroke="#E5E7EB" vertical={false} />
+                  <CartesianGrid strokeDasharray="2 4" stroke="var(--chart-grid-color, #E5E7EB)" vertical={false} />
                   <XAxis
                     dataKey="month"
-                    stroke="#9CA3AF"
+                    stroke="var(--chart-axis-color, #9CA3AF)"
                     tickLine={false}
                     axisLine={false}
                     tickMargin={10}
                     tickFormatter={(value) => value.slice(0, 3)}
                   />
-                  <YAxis stroke="#9CA3AF" tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--chart-axis-color, #9CA3AF)" tickLine={false} axisLine={false} />
                   <ChartTooltip
                     content={<ChartTooltipContent />}
                     formatter={(value, name) => [currencyFormatter(value), name === 'income' ? 'Income' : 'Expenses']}
                   />
                   <ChartLegend content={<ChartLegendContent />} />
-                  <Bar dataKey="income" fill="#6EC6E6" radius={[6, 6, 0, 0]} maxBarSize={16} animationDuration={900} />
-                  <Bar dataKey="expenses" fill="#F472B6" radius={[6, 6, 0, 0]} maxBarSize={16} animationDuration={900} />
+                  <Bar dataKey="income" fill="var(--chart-income-bar, #6EC6E6)" radius={[5, 5, 0, 0]} maxBarSize={16} animationDuration={900} />
+                  <Bar dataKey="expenses" fill="var(--chart-expense-bar, #F472B6)" radius={[5, 5, 0, 0]} maxBarSize={16} animationDuration={900} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>

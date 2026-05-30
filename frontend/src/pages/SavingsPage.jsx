@@ -462,9 +462,9 @@ const SavingsPage = () => {
                     <YAxis stroke="var(--color-muted-foreground)" tickLine={false} axisLine={false} />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <ChartLegend content={<ChartLegendContent />} />
-                    <Line type="monotone" dataKey="savings" stroke="var(--color-savings)" strokeWidth={3} dot={false} />
-                    <Line type="monotone" dataKey="income" stroke="var(--color-income)" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="expenses" stroke="var(--color-expenses)" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="savings" stroke="var(--color-savings)" strokeWidth={1.5} dot={false} />
+                    <Line type="monotone" dataKey="income" stroke="var(--color-income)" strokeWidth={1.5} dot={false} />
+                    <Line type="monotone" dataKey="expenses" stroke="var(--color-expenses)" strokeWidth={1.5} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -638,117 +638,6 @@ const SavingsPage = () => {
               );
             })}
         </div>
-      </section>
-
-      <section className="savings-bottom-grid">
-        <article className="transactions-card">
-          <div className="transactions-header">
-            <div>
-              <h2>Savings History Timeline</h2>
-              <p className="dashboard-subtitle">Month-wise savings records and completed goals.</p>
-            </div>
-            <span className="dashboard-subtitle">{history.length} records</span>
-          </div>
-
-          <div className="savings-timeline">
-            {history.map((item) => (
-              <div key={`${item.month}-${item.year}`} className="savings-timeline-item">
-                <span className="savings-timeline-dot" />
-                <div className="savings-timeline-body">
-                  <div className="savings-timeline-head">
-                    <h3>{item.displayMonth}</h3>
-                    <span className={`savings-status-badge ${(item.progressStatus || '').toLowerCase()}`}>
-                      {item.progressStatus}
-                    </span>
-                  </div>
-                  <p>
-                    Savings {formatCurrency(item.monthlySavings || 0, currency)}. Income {formatCurrency(item.totalIncome || 0, currency)}. Expenses{' '}
-                    {formatCurrency(item.totalExpenses || 0, currency)}.
-                  </p>
-                </div>
-              </div>
-            ))}
-
-            {timeline
-              .filter((item) => item.type === 'goal-completed')
-              .map((item, index) => (
-                <div key={`goal-completed-${index}`} className="savings-timeline-item savings-timeline-item--goal">
-                  <span className="savings-timeline-dot savings-timeline-dot--goal" />
-                  <div className="savings-timeline-body">
-                    <div className="savings-timeline-head">
-                      <h3>{item.label}</h3>
-                      <span className="savings-status-badge completed">Goal completed</span>
-                    </div>
-                    <p>{formatCurrency(item.amount || 0, currency)} target reached.</p>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </article>
-
-        <article className="info-card">
-          <div className="info-card-header">
-            <h2>AI Savings Insights</h2>
-            <span>Solo - Limit 1</span>
-          </div>
-
-          <div className="info-card-body">
-            {!insights ? (
-              <div className="info-card-empty">AI insights will appear after the savings analysis is generated.</div>
-            ) : (
-              <>
-                <div>
-                  <p className="insight-title">Summary</p>
-                  <p className="insight-text">{insights.summary}</p>
-                </div>
-
-                {insights.recommendations?.length ? (
-                  <div>
-                    <p className="insight-title">Recommendations</p>
-                    <ul className="insights-list">
-                      {insights.recommendations.map((item, index) => (
-                        <li key={`${item}-${index}`}>
-                          <p className="insight-text">{item}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-
-                {insights.predictions?.length ? (
-                  <div>
-                    <p className="insight-title">Predictions</p>
-                    <ul className="insights-list">
-                      {insights.predictions.map((item, index) => (
-                        <li key={`${item}-${index}`}>
-                          <p className="insight-text">{item}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-
-                {insights.categoriesToReduce?.length ? (
-                  <div>
-                    <p className="insight-title">Spend less on</p>
-                    <ul className="insights-list">
-                      {insights.categoriesToReduce.map((item, index) => (
-                        <li key={`${item}-${index}`}>
-                          <p className="insight-text">{item}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-
-                <div className="savings-insight-box">
-                  <p className="insight-title">Monthly note</p>
-                  <p className="insight-text">{savingsGrowthText}</p>
-                </div>
-              </>
-            )}
-          </div>
-        </article>
       </section>
 
       {goalModalOpen && (
